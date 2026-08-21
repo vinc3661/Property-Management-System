@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, onSnapshot } from "firebase/firestore";
+import { getFirestore, collection, addDoc, onSnapshot,getDocs } from "firebase/firestore";
 import type { Tenant } from "../types/Tenant";
 
 const firebaseConfig = {
@@ -56,4 +56,23 @@ export function subscribeToTenants(onDataUpdate: (tenants: Tenant[]) => void): (
   );
 
   return unsubscribe;
+}
+
+export async function getTenants(): Promise<Tenant[]> {
+  try {
+    const tenantCollection = collection(db, COLLECTION_NAME);
+    const querySnapshot = await getDocs(tenantCollection);
+    const tenants: Tenant[] = querySnapshot.docs.map((doc) => ({
+      ...(doc.data() as Omit<Tenant, "id">),
+      id: doc.id,
+    }));
+    return tenants;
+  } catch (error) {
+    console.error("Failed to get tenants:", error);
+    throw error;
+  }
+
+
+}
+
 }
