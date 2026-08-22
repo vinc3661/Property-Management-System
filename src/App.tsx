@@ -1,59 +1,76 @@
-import {useState} from 'react';
-import type {Tenant} from './types/Tenant';
-import {TenantForm} from './components/TenantForm';
-import {TenantCard} from './components/Tenantcard';
+
+import { useState } from "react";
+import type { Tenant } from "./types/Tenant";
+import { TenantForm } from "./components/TenantForm";
+import { TenantCard } from "./components/Tenantcard";
+import { addTenantToCloud } from "./services/firebase";
 
 function App() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
 
-  const handleAddTenant = (newTenantData: Omit<Tenant, 'id'>) => {
-    const freshTenant: Tenant = {
-      ...newTenantData,
-      id: crypto.randomUUID(),
-    };
-    setTenants((prevTenants) => [...prevTenants, freshTenant]); 
+  const handleAddTenant = async (
+    newTenantData: Omit<Tenant, "id">
+  ) => {
+    try {
+      const newTenant = await addTenantToCloud(newTenantData);
+
+      setTenants((prevTenants) => [
+        ...prevTenants,
+        newTenant,
+      ]);
+    } catch (error) {
+      console.error("Failed to add tenant:", error);
+    }
   };
 
+  const handleDeleteTenant = (id: string) => {
+    setTenants((prevTenants) =>
+      prevTenants.filter((tenant) => tenant.id !== id)
+    );
+  };
 
-const handleDeleteTenant=(id:string)=>{
-setTenants((prevTenants)=>prevTenants.filter(t=>t.id !==id));
-};
+  return (
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="mx-auto max-w-6xl space-y-8">
 
-return(
-<div className='min-h-sreen bg-grey p-8'>
-<div className='max-w-6xl max-Auto space-y-8'>
-<header className='text-center md:text-left'>
-<h1 className='text-3xl font-extraBold text-gray-900 traking-tight'>
-  Property Management System
-</h1>
-<p className='text-semiBold text-center text-sm text-grey mt-1'>
-  Trakck Real-time Tenant Registration status configurations
-</p>
-</header>
-<div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+        <header className="text-center md:text-left">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+            Property Management System
+          </h1>
+
+          <p className="mt-1 text-center text-sm font-semibold text-gray-500">
+            Track real-time tenant registration status
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-3">
+
           <div className="md:col-span-1">
             <TenantForm onAddTenant={handleAddTenant} />
           </div>
 
           <div className="md:col-span-2">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Active Residencies</h2>
-            
+            <h2 className="mb-4 text-xl font-bold text-gray-800">
+              Active Residencies
+            </h2>
+
             {tenants.length === 0 ? (
-              <div className="p-8 text-center bg-white border border-dashed rounded-xl text-gray-400 font-medium">
+              <div className="rounded-xl border border-dashed bg-white p-8 text-center font-medium text-gray-400">
                 No tenants registered yet. Use the form to add one!
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {tenants.map((item) => (
-                  <TenantCard 
-                    key={item.id} 
-                    tenant={item} 
-                    onDelete={handleDeleteTenant} 
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {tenants.map((tenant) => (
+                  <TenantCard
+                    key={tenant.id}
+                    tenant={tenant}
+                    onDelete={handleDeleteTenant}
                   />
                 ))}
               </div>
             )}
           </div>
+
         </div>
       </div>
     </div>
