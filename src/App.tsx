@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {Tenant} from './types/Tenant';
+import type {Tenant} from './types/Tenant';
 import {TenantForm} from './components/TenantForm';
 import {TenantCard} from './components/Tenantcard';
 
@@ -11,7 +11,7 @@ function App() {
       ...newTenantData,
       id: crypto.randomUUID(),
     };
-    setTenants((prevTenants) => [...prevTenants, freshTenant]);
+    setTenants((prevTenants) => [...prevTenants, freshTenant]); 
   };
 
 
