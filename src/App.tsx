@@ -1,13 +1,21 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Tenant } from "./types/Tenant";
 import { TenantForm } from "./components/TenantForm";
 import { TenantCard } from "./components/Tenantcard";
-import { addTenantToCloud } from "./services/firebase";
+import { addTenantToCloud,subscribeToTenants } from "./services/firebase";
+
 
 function App() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
 
+  useEffect(()=>{
+const unsubscribe=subscribeToTenants((updatedTenants)=>{
+setTenants(updatedTenants)
+})
+
+return unsubscribe;
+  },[])
   const handleAddTenant = async (
     newTenantData: Omit<Tenant, "id">
   ) => {
