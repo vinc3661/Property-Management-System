@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, onSnapshot,getDocs } from "firebase/firestore";
+import { getFirestore, collection, addDoc, onSnapshot, getDocs, deleteDoc, doc } from "firebase/firestore";
 import type { Tenant } from "../types/Tenant";
 
 const firebaseConfig = {
@@ -35,7 +35,15 @@ export async function addTenantToCloud(tenantData: Omit<Tenant, "id">): Promise<
   }
 }
 
-
+export async function deleteTenantFromCloud(id: string): Promise<void> {
+  try {
+    const tenantDocument = doc(db, COLLECTION_NAME, id);
+    await deleteDoc(tenantDocument);
+  } catch (error) {
+    console.error("Failed to delete tenant from the cloud:", error);
+    throw error;
+  }
+}
  
 export function subscribeToTenants(onDataUpdate: (tenants: Tenant[]) => void): () => void {
   const tenantCollection = collection(db, COLLECTION_NAME);
