@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { Tenant } from "./types/Tenant";
 import { TenantForm } from "./components/TenantForm";
 import { TenantCard } from "./components/Tenantcard";
-import { addTenantToCloud,subscribeToTenants } from "./services/firebase";
+import { addTenantToCloud,subscribeToTenants,deleteTenantFromCloud } from "./services/firebase";
 
 
 function App() {
@@ -31,11 +31,16 @@ return unsubscribe;
     }
   };
 
-  const handleDeleteTenant = (id: string) => {
-    setTenants((prevTenants) =>
-      prevTenants.filter((tenant) => tenant.id !== id)
-    );
-  };
+  const handleDeleteTenant = async(id:string)=>{
+try{
+await deleteTenantFromCloud(id);
+}catch(error){
+  console.error("failed to delete tenant:",error)
+}
+
+}
+
+  
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
