@@ -20,12 +20,8 @@ return unsubscribe;
     newTenantData: Omit<Tenant, "id">
   ) => {
     try {
-      const newTenant = await addTenantToCloud(newTenantData);
-
-      setTenants((prevTenants) => [
-        ...prevTenants,
-        newTenant,
-      ]);
+      await addTenantToCloud(newTenantData);
+      
     } catch (error) {
       console.error("Failed to add tenant:", error);
     }
