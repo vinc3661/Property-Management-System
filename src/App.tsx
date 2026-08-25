@@ -1,42 +1,41 @@
-
 import { useEffect, useState } from "react";
 import type { Tenant } from "./types/Tenant";
 import { TenantForm } from "./components/TenantForm";
 import { TenantCard } from "./components/Tenantcard";
-import { addTenantToCloud,subscribeToTenants,deleteTenantFromCloud } from "./services/firebase";
-
+import {
+  addTenantToCloud,
+  subscribeToTenants,
+  deleteTenantFromCloud,
+} from "./services/firebase";
 
 function App() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
 
-  useEffect(()=>{
-const unsubscribe=subscribeToTenants((updatedTenants)=>{
-setTenants(updatedTenants)
-})
+  useEffect(() => {
+    const unsubscribe = subscribeToTenants((updatedTenants) => {
+      setTenants(updatedTenants);
+    });
 
-return unsubscribe;
-  },[])
+    return unsubscribe;
+  }, []);
+
   const handleAddTenant = async (
     newTenantData: Omit<Tenant, "id">
   ) => {
     try {
       await addTenantToCloud(newTenantData);
-      
     } catch (error) {
       console.error("Failed to add tenant:", error);
     }
   };
 
-  const handleDeleteTenant = async(id:string)=>{
-try{
-await deleteTenantFromCloud(id);
-}catch(error){
-  console.error("failed to delete tenant:",error)
-}
-
-}
-
-  
+  const handleDeleteTenant = async (id: string) => {
+    try {
+      await deleteTenantFromCloud(id);
+    } catch (error) {
+      console.error("Failed to delete tenant:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -87,4 +86,3 @@ await deleteTenantFromCloud(id);
 }
 
 export default App;
-
