@@ -6,6 +6,7 @@ import {
   addTenantToCloud,
   subscribeToTenants,
   deleteTenantFromCloud,
+  updateTenantsInCloud,
 } from "./services/firebase";
 
 function App() {
@@ -37,6 +38,17 @@ function App() {
     }
   };
 
+const handleUpdateTenants= async (id:string, updates:Partial<Omit<Tenant,'id'>> )=>{
+try{
+  await updateTenantsInCloud(id,updates)
+}catch(error){
+  console.error('failed to update tenants');
+}
+
+
+};
+
+  
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -73,6 +85,7 @@ function App() {
                     key={tenant.id}
                     tenant={tenant}
                     onDelete={handleDeleteTenant}
+                    onUpdate={handleUpdateTenants}
                   />
                 ))}
               </div>
