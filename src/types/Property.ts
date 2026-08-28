@@ -1,6 +1,6 @@
 export type Property={
    id:string;
     houseNumber:string;
-    status:"ocupied"|"vacant";
+    status:"occupied"|"vacant";
     rentAmount:number;
 };
