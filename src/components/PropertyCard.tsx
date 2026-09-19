@@ -13,18 +13,23 @@ export function PropertyCard({property, onDelete, onUpdate}:propertyCardProps){
    const [status,setStatus]=useState<"occupied"|"vacant">("vacant");
    const [rentAmount,setRentAmount]=useState<number>(0);
    
+const handleEdit=()=>{
+    
+    setHouseNumber(property.houseNumber);
+    setStatus(property.status);
+    setRentAmount(property.rentAmount);
+   setIsEditing(true);
+};
+
+
 const handleSave=async ()=>{
     try{
-        await onUpdate(property.id,{
-            houseNumber,
-            status,
-            rentAmount
-        });
+    await onUpdate(property.id, {houseNumber,status,rentAmount});
+        setIsEditing(false);
+    }catch(error){
+        console.error('failed to save updates:',error)
     }
-    catch(error){
-        console.error('failed to update Property:',error);
     }
-};
 
    if(isEditing){
     return(
@@ -46,13 +51,15 @@ const handleSave=async ()=>{
     placeholder="Enter rent Amount"
     className="mb-3 w-full rounded-lg border p-2"
     />
-    <input 
-    type="text"
+    <select
     value={status}
-    onChange={(e)=>setStatus(e.target.value as "occupied" | "vacant")}
-    placeholder="Enter status"
+    onChange={(e)=>setStatus(e.target.value as"occupied"|"vacant")}
     className="mb-3 w-full rounded-lg border p-2"
-    />
+    >
+ <option value="occupied">Occupied</option>
+ <option value="vacant">Vacant</option>
+
+    </select>
     <div>
     <button
         onClick={handleSave}
@@ -82,7 +89,7 @@ return(
            <p className="mb-4 text-gray-600">status:{property.status}</p>
 
       <button 
-      onClick={()=>setIsEditing(true)}
+      onClick={handleEdit}
       className="mr-2 rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
       >
         Edit Property
