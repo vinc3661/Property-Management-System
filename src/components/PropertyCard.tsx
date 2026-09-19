@@ -1,13 +1,13 @@
 import { useState } from "react";
 import type {Property} from "../types/Property";
 
-type propertyCardProps={
+type PropertyCardProps={
 property: Property;
 onDelete:(id:string)=>void;
 onUpdate:(id:string, updates:Partial<Omit<Property,'id'>>)=>Promise<void>
 };
 
-export function PropertyCard({property, onDelete, onUpdate}:propertyCardProps){
+export function PropertyCard({property, onDelete, onUpdate}:PropertyCardProps){
    const [isEditing,setIsEditing]=useState<boolean>(false);
    const [houseNumber,setHouseNumber]=useState<string>('');
    const [status,setStatus]=useState<"occupied"|"vacant">("vacant");
