@@ -2,16 +2,21 @@ import { useEffect, useState } from "react";
 import type { Tenant } from "./types/Tenant";
 import { TenantForm } from "./components/TenantForm";
 import { TenantCard } from "./components/Tenantcard";
+import type {Property} from './types/Property';
 import {
   addTenantToCloud,
   subscribeToTenants,
   deleteTenantFromCloud,
   updateTenantsInCloud,
+  updatedPropertiesInCloud,
+  subsrcibeToProperties,
+  deletePropertyFromCloud,
 } from "./services/firebase";
-
+import { PropertyForm } from "./components/PropertyForm";
+import { PropertyCard } from "./components/PropertyCard";
 function App() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
-
+   const [properties,setProperties]=useState<Property[]>([]);
   useEffect(() => {
     const unsubscribe = subscribeToTenants((updatedTenants) => {
       setTenants(updatedTenants);
@@ -38,7 +43,7 @@ function App() {
     }
   };
 
-const handleUpdateTenants= async (id:string, updates:Partial<Omit<Tenant,'id'>> )=>{
+const handleUpdateTenant= async (id:string, updates:Partial<Omit<Tenant,'id'>> )=>{
 try{
   await updateTenantsInCloud(id,updates)
 }catch(error){
@@ -48,7 +53,36 @@ try{
 
 };
 
-  
+useEffect(()=>{
+  const unsubscribe=subscribeToProperties((updatedProperties)=>{
+    setProperties(updatedProperties);
+
+  });
+  return unsubscribe;
+})
+
+const handleAddProperty=async(newPropertyData:Omit<property, 'id'>)=>{
+  try{
+    await updatedPropertiesInCloud(newPropertyData);
+  }
+catch(error){
+  console.error('failed to add property:',error);
+}
+}
+  const handleDeleteProperty=async (id:string)=>{
+    try{
+      await deletePropertyFromCloud(id);
+    }catch(error){
+      console.error('failed to delete property:',error);
+    }
+  }
+  const hanldeUpdateProperty=async(id:string, updates:partial<Omit<Property,'id'>>)=>{
+    try{
+      await updatePropetiesInCloud(id,updates);
+    }catch(error){
+      console.error('failed to update property:',error);
+    }
+  }
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -85,7 +119,7 @@ try{
                     key={tenant.id}
                     tenant={tenant}
                     onDelete={handleDeleteTenant}
-                    onUpdate={handleUpdateTenants}
+                    onUpdate={handleUpdateTenant}
                   />
                 ))}
               </div>
@@ -93,9 +127,19 @@ try{
           </div>
 
         </div>
+      <div className="md:col-span-1">
+        <PropertyForm onAddProperty={handleAddProperty}>
+          
+        </PropertyForm>
+      </div>
       </div>
     </div>
-  );
+ 
+    
+
+    
+
+);
 }
 
 export default App;
