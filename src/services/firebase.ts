@@ -8,7 +8,6 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  querySnapshotFromJSON,
 } from "firebase/firestore";
 import type { Tenant } from "../types/Tenant";
 import type {Property} from "../types/Property";
@@ -24,14 +23,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-const COLLECTION_NAME = "Tenant";
-const COLLECTION_P="Property";
+const PROPERTY_COLLECTION = "tenants";
+const TENANT_COLLECTION="properties";
 
 export async function addTenantToCloud(
   tenantData: Omit<Tenant, "id">
 ): Promise<Tenant> {
   try {
-    const tenantCollection = collection(db, COLLECTION_NAME);
+    const tenantCollection = collection(db, TENANT_COLLECTION);
     const docRef = await addDoc(tenantCollection, tenantData);
 
     return {
@@ -49,7 +48,7 @@ export async function updateTenantsInCloud(
   updates: Partial<Omit<Tenant, "id">>
 ): Promise<void> {
   try {
-    const tenantDocument = doc(db, COLLECTION_NAME, id);
+    const tenantDocument = doc(db, TENANT_COLLECTION, id);
 
     await updateDoc(tenantDocument, updates);
   } catch (error) {
@@ -62,7 +61,7 @@ export async function deleteTenantFromCloud(
   id: string
 ): Promise<void> {
   try {
-    const tenantDocument = doc(db, COLLECTION_NAME, id);
+    const tenantDocument = doc(db, TENANT_COLLECTION, id);
 
     await deleteDoc(tenantDocument);
   } catch (error) {
@@ -74,7 +73,7 @@ export async function deleteTenantFromCloud(
 export function subscribeToTenants(
   onDataUpdate: (tenants: Tenant[]) => void
 ): () => void {
-  const tenantCollection = collection(db, COLLECTION_NAME);
+  const tenantCollection = collection(db, TENANT_COLLECTION);
 
   const unsubscribe = onSnapshot(
     tenantCollection,
@@ -96,7 +95,7 @@ export function subscribeToTenants(
 
 export async function getTenants(): Promise<Tenant[]> {
   try {
-    const tenantCollection = collection(db, COLLECTION_NAME);
+    const tenantCollection = collection(db, TENANT_COLLECTION);
     const querySnapshot = await getDocs(tenantCollection);
 
     const tenants: Tenant[] = querySnapshot.docs.map((doc) => ({
@@ -111,9 +110,10 @@ export async function getTenants(): Promise<Tenant[]> {
   }
 }
 
+
 export  async function addPropertiesToCloud(PropertyData:Omit<Property,'id'>):Promise<Property>{
 try{
-const propertyCollection=collection(db,COLLECTION_P);
+const propertyCollection=collection(db,PROPERTY_COLLECTION);
 const docRef=await addDoc(propertyCollection,PropertyData);
 
 return{
@@ -130,7 +130,7 @@ throw error
 
 export async function updatePropertiesInCloud(id:string,updates:Partial<Omit<Property,'id'>>):Promise<void>{
   try{
-    const propertyDocument=doc(db,COLLECTION_P,id);
+    const propertyDocument=doc(db,PROPERTY_COLLECTION,id);
     await updateDoc(propertyDocument,updates)
   }catch(error){
     console.error('failed to update Property:',error);
@@ -141,7 +141,7 @@ export async function updatePropertiesInCloud(id:string,updates:Partial<Omit<Pro
 };
   export async function  deletePropertyFromCloud(id:string):Promise<void>{
     try{
-      const propertyDocument=doc(db,COLLECTION_P,id);
+      const propertyDocument=doc(db,PROPERTY_COLLECTION,id);
       await deleteDoc(propertyDocument);
     }catch(error){
       console.error("failed to delete Property in cluod:",error);
@@ -151,17 +151,17 @@ export async function updatePropertiesInCloud(id:string,updates:Partial<Omit<Pro
 
   export async function getPropertiesFromCloud():Promise<Property[]>{
     try{
-      const propertyCollection=collection(db,COLLECTION_P);
+      const propertyCollection=collection(db,PROPERTY_COLLECTION);
       const QuerySnapShot=await getDocs(propertyCollection);
 
-     const Property:Property[]=QuerySnapShot.docs.map((doc)=>({
+     const Properties:Property[]=QuerySnapShot.docs.map((doc)=>({
        ...(doc.data() as Omit <Property, 'id'> ),
        id:doc.id,
 
        
 
      }));
-return Property;
+return Properties;
     }catch(error){
       console.error('failed to get Property in Cloud:',error);
       throw error
@@ -172,7 +172,7 @@ return Property;
   export function subscribeToProperties(
     onDataUpdate: (properties: Property[]) => void
   ): () => void {
-    const propertyCollection = collection(db, COLLECTION_P);
+    const propertyCollection = collection(db, PROPERTY_COLLECTION);
     const unsubscribe = onSnapshot(
       propertyCollection,
       (querySnapshot) => {
