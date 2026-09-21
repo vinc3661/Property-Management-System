@@ -10,7 +10,7 @@ import {
   doc,
 } from "firebase/firestore";
 import type { Tenant } from "../types/Tenant";
-
+import type {Property} from "../types/Property";
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -24,6 +24,7 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
 const COLLECTION_NAME = "Tenant";
+const COLLECTION_P="Property";
 
 export async function addTenantToCloud(
   tenantData: Omit<Tenant, "id">
@@ -108,3 +109,63 @@ export async function getTenants(): Promise<Tenant[]> {
     throw error;
   }
 }
+
+export  async function addPropertiesToCloud(PropertyData:Omit<Property,'id'>):Promise<Property>{
+try{
+const propertyCollection=collection(db,COLLECTION_P);
+const docRef=await addDoc(propertyCollection,PropertyData);
+
+return{
+  ...PropertyData,
+  id:docRef.id,
+};
+}catch(error){
+  console.error('failed to add Property to Cluod:',error);
+throw error
+
+}
+
+};
+
+export async function updatePropertiesInCloud(id:string,updates:Partial<Omit<Property,'id'>>):Promise<void>{
+  try{
+    const propertyDocument=doc(db,COLLECTION_P,id);
+    await updateDoc(propertyDocument,updates)
+  }catch(error){
+    console.error('failed to update Property:',error);
+    throw error 
+  
+  }
+  
+};
+  export async function  deletePropertyFromCloud(id:string):Promise<void>{
+    try{
+      const propertyDocument=doc(db,COLLECTION_P,id);
+      await deleteDoc(propertyDocument);
+    }catch(error){
+      console.error("failed to delete Property in cluod:",error);
+      throw error
+    }
+  };
+
+  export async function getPropertiesFromCloud():Promise<Property[]>{
+    try{
+      const propertyCollection=collection(db,COLLECTION_P);
+      const QuerySnapShot=await getDocs(propertyCollection);
+
+     const Property:Property[]=QuerySnapShot.docs.map((doc)=>({
+       ...(doc.data() as Omit <Property, 'id'> ),
+       id:doc.id,
+
+       
+
+     }));
+return Property;
+    }catch(error){
+      console.error('failed to get Property in Cloud:',error);
+      throw error
+
+    }
+  };
+
+  

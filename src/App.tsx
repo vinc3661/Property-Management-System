@@ -8,8 +8,8 @@ import {
   subscribeToTenants,
   deleteTenantFromCloud,
   updateTenantsInCloud,
-  updatedPropertiesInCloud,
-  subsrcibeToProperties,
+  updatePropertiesInCloud,
+  subscribeToProperties,
   deletePropertyFromCloud,
 } from "./services/firebase";
 import { PropertyForm } from "./components/PropertyForm";
@@ -61,9 +61,9 @@ useEffect(()=>{
   return unsubscribe;
 })
 
-const handleAddProperty=async(newPropertyData:Omit<property, 'id'>)=>{
+const handleAddProperty=async(newPropertyData:Omit<Property, 'id'>)=>{
   try{
-    await updatedPropertiesInCloud(newPropertyData);
+    await updatePropertiesInCloud(newPropertyData);
   }
 catch(error){
   console.error('failed to add property:',error);
@@ -76,7 +76,7 @@ catch(error){
       console.error('failed to delete property:',error);
     }
   }
-  const hanldeUpdateProperty=async(id:string, updates:partial<Omit<Property,'id'>>)=>{
+  const handleUpdateProperty=async(id:string, updates:partial<Omit<Property,'id'>>)=>{
     try{
       await updatePropetiesInCloud(id,updates);
     }catch(error){
@@ -128,9 +128,32 @@ catch(error){
 
         </div>
       <div className="md:col-span-1">
-        <PropertyForm onAddProperty={handleAddProperty}>
+        <PropertyForm onAddProperty={handleAddProperty}
+        />
+        <div className="md:col-span-2">
+          <h2 className="mb-4 text-xl font-bold text-gray-800">
+            Active Properties
+          </h2>
+        {properties.length===0?(
+          <div className="rounded-xl border border-dashed bg-white p-8 text-center font-medium text-gray-400">
+            No properties registered yet. Use the form to add one!
+          </div>
+        ):(
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {properties.map((property) => (
+              <PropertyCard
+                key={property.id}
+                property={property}
+                onDelete={handleDeleteProperty}
+                onUpdate={handleUpdateProperty}
+              />
+            ))}
+          </div>
+        )}
+        </div>
+
           
-        </PropertyForm>
+        
       </div>
       </div>
     </div>
