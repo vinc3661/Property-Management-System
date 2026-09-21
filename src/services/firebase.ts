@@ -8,6 +8,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  querySnapshotFromJSON,
 } from "firebase/firestore";
 import type { Tenant } from "../types/Tenant";
 import type {Property} from "../types/Property";
@@ -168,4 +169,23 @@ return Property;
     }
   };
 
-  
+  export function subscribeToProperties(
+    onDataUpdate: (properties: Property[]) => void
+  ): () => void {
+    const propertyCollection = collection(db, COLLECTION_P);
+    const unsubscribe = onSnapshot(
+      propertyCollection,
+      (querySnapshot) => {
+        const properties: Property[] = querySnapshot.docs.map((doc) => ({
+          ...(doc.data() as Omit<Property, "id">),
+          id: doc.id,
+        }));
+        onDataUpdate(properties);
+      },
+      (error) => {
+        console.error("real time sync failed:", error);
+      }
+    );
+
+    return unsubscribe;
+  }

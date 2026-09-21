@@ -11,6 +11,7 @@ import {
   updatePropertiesInCloud,
   subscribeToProperties,
   deletePropertyFromCloud,
+  addPropertiesToCloud,
 } from "./services/firebase";
 import { PropertyForm } from "./components/PropertyForm";
 import { PropertyCard } from "./components/PropertyCard";
@@ -54,8 +55,8 @@ try{
 };
 
 useEffect(()=>{
-  const unsubscribe=subscribeToProperties((updatedProperties)=>{
-    setProperties(updatedProperties);
+  const unsubscribe=subscribeToProperties(( updatedProperties)=>{
+    setProperties( updatedProperties);
 
   });
   return unsubscribe;
@@ -63,7 +64,7 @@ useEffect(()=>{
 
 const handleAddProperty=async(newPropertyData:Omit<Property, 'id'>)=>{
   try{
-    await updatePropertiesInCloud(newPropertyData);
+    await addPropertiesToCloud(newPropertyData);
   }
 catch(error){
   console.error('failed to add property:',error);
@@ -76,9 +77,9 @@ catch(error){
       console.error('failed to delete property:',error);
     }
   }
-  const handleUpdateProperty=async(id:string, updates:partial<Omit<Property,'id'>>)=>{
+  const handleUpdateProperty=async(id:string, updates:Partial<Omit<Property,'id'>>)=>{
     try{
-      await updatePropetiesInCloud(id,updates);
+      await  updatePropertiesInCloud(id,updates);
     }catch(error){
       console.error('failed to update property:',error);
     }
