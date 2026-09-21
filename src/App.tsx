@@ -58,7 +58,7 @@ useEffect(()=>{
   const unsubscribe=subscribeToProperties(( updatedProperties)=>{
     setProperties( updatedProperties);
 
-  });
+  []},);
   return unsubscribe;
 })
 
