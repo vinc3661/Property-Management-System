@@ -12,8 +12,8 @@ import {
   subscribeToProperties,
   deletePropertyFromCloud,
   addPropertiesToCloud,
-  getPropertiesFromCloud,
-  getTenantsFromCloud,
+  
+  
 } from "./services/firebase";
 import { PropertyForm } from "./components/PropertyForm";
 import { PropertyCard } from "./components/PropertyCard";
@@ -133,13 +133,16 @@ catch(error){
           </div>
 
         </div>
-      <div className="md:col-span-1">
-        <PropertyForm onAddProperty={handleAddProperty}
-        />
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        <div className="md:col-span-1">
+          <PropertyForm onAddProperty={handleAddProperty} />
+        </div>
         <div className="md:col-span-2">
           <h2 className="mb-4 text-xl font-bold text-gray-800">
-            Active Properties
+            REGISTERED PROPERTIES
           </h2>
+            
+          
         {properties.length===0?(
           <div className="rounded-xl border border-dashed bg-white p-8 text-center font-medium text-gray-400">
             No properties registered yet. Use the form to add one!
