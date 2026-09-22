@@ -12,6 +12,8 @@ import {
   subscribeToProperties,
   deletePropertyFromCloud,
   addPropertiesToCloud,
+  getPropertiesFromCloud,
+  getTenantsFromCloud,
 } from "./services/firebase";
 import { PropertyForm } from "./components/PropertyForm";
 import { PropertyCard } from "./components/PropertyCard";
@@ -61,6 +63,16 @@ useEffect(()=>{
   []},);
   return unsubscribe;
 })
+const handleFetchTenants=async ()=>{
+try{
+  const tenants=await getTenantsFromCloud();
+  setTenants(tenants);
+}catch(error){
+  console.error('failed to get tenants:',error);
+}
+};
+
+
 
 const handleAddProperty=async(newPropertyData:Omit<Property, 'id'>)=>{
   try{
@@ -84,6 +96,14 @@ catch(error){
       console.error('failed to update property:',error);
     }
   }
+  const handleFetchProperties=async ()=>{
+    try{
+      const properties=await getPropertiesFromCloud();
+      setProperties(properties);
+    }catch(error){
+      console.error('failed to get properties:',error);
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -101,7 +121,7 @@ catch(error){
         <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-3">
 
           <div className="md:col-span-1">
-            <TenantForm onAddTenant={handleAddTenant} />
+          <TenantForm onAddTenant={handleAddTenant} onFetchTenants={handleFetchTenants} />
           </div>
 
           <div className="md:col-span-2">

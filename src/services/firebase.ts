@@ -93,7 +93,7 @@ export function subscribeToTenants(
   return unsubscribe;
 }
 
-export async function getTenants(): Promise<Tenant[]> {
+export async function getTenantsFromCloud(): Promise<Tenant[]> {
   try {
     const tenantCollection = collection(db, TENANT_COLLECTION);
     const querySnapshot = await getDocs(tenantCollection);
