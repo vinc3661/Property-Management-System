@@ -18,6 +18,7 @@ import {
 import { PropertyForm } from "./components/PropertyForm";
 import { PropertyCard } from "./components/PropertyCard";
 function App() {
+    console.log("APP IS RUNNING");
   const [tenants, setTenants] = useState<Tenant[]>([]);
    const [properties,setProperties]=useState<Property[]>([]);
   useEffect(() => {
@@ -31,6 +32,7 @@ function App() {
   const handleAddTenant = async (
     newTenantData: Omit<Tenant, "id">
   ) => {
+     console.log("handleAddTenant called:", newTenantData);
     try {
       await addTenantToCloud(newTenantData);
     } catch (error) {

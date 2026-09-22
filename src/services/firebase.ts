@@ -19,21 +19,27 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
-
+console.log("Firebase project:", firebaseConfig.projectId);
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-const PROPERTY_COLLECTION = "tenants";
-const TENANT_COLLECTION="properties";
+const PROPERTY_COLLECTION = "properties";
+const TENANT_COLLECTION="tenants";
 
 export async function addTenantToCloud(
   tenantData: Omit<Tenant, "id">
 ): Promise<Tenant> {
   try {
     const tenantCollection = collection(db, TENANT_COLLECTION);
+    
+    console.log("About to save tenant:", tenantData);
     const docRef = await addDoc(tenantCollection, tenantData);
+console.log("Tenant saved with ID:", docRef.id);
+    
+console.log("🔥 ADD DOC FINISHED");
+console.log("🔥 DOCUMENT ID:", docRef.id);
 
-    return {
+return {
       ...tenantData,
       id: docRef.id,
     };

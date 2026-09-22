@@ -6,12 +6,15 @@ type PropertyFormProps = {
 };
 
 export function PropertyForm({ onAddProperty }: PropertyFormProps) {
-  const [houseNumber, setHouseNumber] = useState<string>("");
-  const [rentAmount, setRentAmount] = useState<number>(0);
+  const [houseNumber, setHouseNumber] = useState("");
+  const [rentAmount, setRentAmount] = useState<number|"">("");
   const [status, setStatus] = useState<"occupied" | "vacant">("vacant");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+if(rentAmount===""){
+  return;
+}
 
     try {
       await onAddProperty({
@@ -48,7 +51,7 @@ export function PropertyForm({ onAddProperty }: PropertyFormProps) {
       <input
         type="number"
         value={rentAmount}
-        onChange={(e) => setRentAmount(Number(e.target.value))}
+        onChange={(e) => setRentAmount(e.target.value===""?"":Number(e.target.value))}
         placeholder="Enter rent amount"
         className="mb-3 w-full rounded-lg border p-2"
       />
