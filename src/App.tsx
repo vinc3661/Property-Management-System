@@ -56,21 +56,7 @@ try{
 
 };
 
-useEffect(()=>{
-  const unsubscribe=subscribeToProperties(( updatedProperties)=>{
-    setProperties( updatedProperties);
 
-  []},);
-  return unsubscribe;
-})
-const handleFetchTenants=async ()=>{
-try{
-  const tenants=await getTenantsFromCloud();
-  setTenants(tenants);
-}catch(error){
-  console.error('failed to get tenants:',error);
-}
-};
 
 
 
@@ -96,14 +82,13 @@ catch(error){
       console.error('failed to update property:',error);
     }
   }
-  const handleFetchProperties=async ()=>{
-    try{
-      const properties=await getPropertiesFromCloud();
-      setProperties(properties);
-    }catch(error){
-      console.error('failed to get properties:',error);
-    }
-  };
+  useEffect(()=>{
+    const unsubscribe=subscribeToProperties((updatedProperties)=>{
+      setProperties(updatedProperties);
+    });
+    return unsubscribe;
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -121,7 +106,7 @@ catch(error){
         <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-3">
 
           <div className="md:col-span-1">
-          <TenantForm onAddTenant={handleAddTenant} onFetchTenants={handleFetchTenants} />
+          <TenantForm onAddTenant={handleAddTenant} />
           </div>
 
           <div className="md:col-span-2">

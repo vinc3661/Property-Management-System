@@ -67,3 +67,5 @@ export function TenantForm({ onAddTenant }: TenantFormProps) {
     </form>
   );
 }
+
+
