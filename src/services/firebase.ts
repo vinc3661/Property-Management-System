@@ -9,6 +9,7 @@ import {
   deleteDoc,
   doc,
 } from "firebase/firestore";
+import {getAuth} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
 import type {Property} from "../types/Property";
 const firebaseConfig = {
@@ -22,7 +23,7 @@ const firebaseConfig = {
 console.log("Firebase project:", firebaseConfig.projectId);
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-
+export const auth=getAuth(app);
 const PROPERTY_COLLECTION = "properties";
 const TENANT_COLLECTION="tenants";
 
