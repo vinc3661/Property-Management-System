@@ -9,7 +9,7 @@ import {
   deleteDoc,
   doc,
 } from "firebase/firestore";
-import {getAuth} from "firebase/auth";
+import { getAuth} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
 import type {Property} from "../types/Property";
 const firebaseConfig = {
