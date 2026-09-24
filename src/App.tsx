@@ -19,6 +19,7 @@ import {
 import {registerUser} from "./services/auth"
 import { PropertyForm } from "./components/PropertyForm";
 import { PropertyCard } from "./components/PropertyCard";
+import type { RegisterData } from "./types/RegisterData";
 function App() {
     console.log("APP IS RUNNING");
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -93,15 +94,15 @@ catch(error){
     return unsubscribe;
   }, []);
 
- const handleRegisterUser=async (data:registerData)=>{
+
+ const handleRegisterUser=async (data: RegisterData)=>{
   try{
-    await registerUser(data.email,data.password);
+    await registerUser(data.email, data.password);
     console.log('registration successfull');
   }catch(error){
     console.error('failed to register user:',error);
-
   }
- }
+ };
 
    
   return (
