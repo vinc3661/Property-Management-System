@@ -3,6 +3,7 @@ import type { Tenant } from "./types/Tenant";
 import { TenantForm } from "./components/TenantForm";
 import { TenantCard } from "./components/Tenantcard";
 import type {Property} from './types/Property';
+import {RegisterUserForm} from './components/RegisterUserForm'
 import {
   addTenantToCloud,
   subscribeToTenants,
@@ -15,6 +16,7 @@ import {
   
   
 } from "./services/firebase";
+import {registerUser} from "./services/auth"
 import { PropertyForm } from "./components/PropertyForm";
 import { PropertyCard } from "./components/PropertyCard";
 function App() {
@@ -91,6 +93,17 @@ catch(error){
     return unsubscribe;
   }, []);
 
+ const handleRegisterUser=async (data:registerData)=>{
+  try{
+    await registerUser(data.email,data.password);
+    console.log('registration successfull');
+  }catch(error){
+    console.error('failed to register user:',error);
+
+  }
+ }
+
+   
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -166,8 +179,14 @@ catch(error){
           
         
       </div>
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        <div className="md:col-span-1">
+          <RegisterUserForm onRegister={handleRegisterUser}/>
+          </div>
+        </div>
       </div>
-    </div>
+      </div>
+    
  
     
 
