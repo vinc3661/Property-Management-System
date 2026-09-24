@@ -7,5 +7,6 @@ export async function registerUser(email:string,password:string):Promise<void>{
  console.log('user id');   
 }catch(error){
         console.error('failed to register user:',error);
+      throw error;    
     }
 };
