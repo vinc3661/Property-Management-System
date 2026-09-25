@@ -1,20 +1,18 @@
 
 import {useState} from "react";
-
-type User={
-    email:string;
-    password:string;
-    role:string;
-};
+type LoginData={
+    email:string,
+    password:string,
+}
 
 type LoginFormProps={
-    onSignUser:(data:User)=>void;
+    onSignUser:(data:LoginData)=>void;
 };
 
 export  function LoginForm({onSignUser}:LoginFormProps){
     const [email,setEmail ]=useState("");
     const [password,setPassword]=useState("");
-    const [role,setRole]=useState("");
+    
 
     const handleSubmit=(e:React.FormEvent)=>{
         e.preventDefault();
@@ -22,11 +20,11 @@ export  function LoginForm({onSignUser}:LoginFormProps){
     onSignUser({
         email,
         password,
-        role,
+        
     });
     setEmail("");
     setPassword("");
-    setRole("");
+    
     };
     return(
         <form onSubmit={handleSubmit} className="flex flex-col-3">
@@ -48,12 +46,6 @@ type="text"
 value={password}
 onChange={(e)=>setPassword(e.target.value)}
 placeholder="Enter password"
-className="rounded-2xl bg-white"
-/>
-<input
-type="text"
-value={role}
-onChange={(e)=>setRole(e.target.value)}
 className="rounded-2xl bg-white"
 />
 

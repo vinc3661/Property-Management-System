@@ -20,6 +20,9 @@ import {registerUser} from "./services/auth"
 import { PropertyForm } from "./components/PropertyForm";
 import { PropertyCard } from "./components/PropertyCard";
 import type { RegisterData } from "./types/RegisterData";
+import type {LoginData} from "./types/LoginData";
+import {signUser} from "./services/auth";
+import { LoginForm } from "./components/LoginForm";
 function App() {
     console.log("APP IS RUNNING");
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -104,6 +107,15 @@ catch(error){
   }
  };
 
+ const handleSignUser=async (data:LoginData)=>{
+  try{
+    await signUser(data.email,data.password);
+    console.log('login successfull');
+  }catch(error){
+    console.error('failed to sign in user:',error);
+  }
+ };
+
    
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -184,6 +196,9 @@ catch(error){
         <div className="md:col-span-1">
           <RegisterUserForm onRegister={handleRegisterUser}/>
           </div>
+        <div className="grid grid-cols gap-4 md:grid-cols-3">
+          <LoginForm onSignUser={handleSignUser}/>
+        </div>
         </div>
       </div>
       </div>

@@ -14,7 +14,7 @@ export async function registerUser(email:string,password:string):Promise<void>{
       throw error;    
     }
 };
-export async function sighnUser(email:string,password:string):Promise<void>{
+export async function signUser(email:string,password:string):Promise<void>{
   try{
     const credentials=await signInWithEmailAndPassword(auth,email,password);
     console.log('user:',credentials.user);
