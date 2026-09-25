@@ -8,10 +8,10 @@ type User={
 };
 
 type LoginFormProps={
-    onSighnUser:(data:User)=>void;
+    onSignUser:(data:User)=>void;
 };
 
-export  function LoginForm({onSighnUser}:LoginFormProps){
+export  function LoginForm({onSignUser}:LoginFormProps){
     const [email,setEmail ]=useState("");
     const [password,setPassword]=useState("");
     const [role,setRole]=useState("");
@@ -19,7 +19,7 @@ export  function LoginForm({onSighnUser}:LoginFormProps){
     const handleSubmit=(e:React.FormEvent)=>{
         e.preventDefault();
     
-    onSighnUser({
+    onSignUser({
         email,
         password,
         role,

@@ -4,7 +4,7 @@ import {useState} from 'react';
 type registerData={
     email:string;
     password:string;
-}
+};
 
 
 type RegisterUserFormProps={
