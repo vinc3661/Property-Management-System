@@ -18,7 +18,7 @@ export  function LoginForm({onSighnUser}:LoginFormProps){
 
     const handleSubmit=(e:React.FormEvent)=>{
         e.preventDefault();
-    };
+    
     onSighnUser({
         email,
         password,
@@ -27,7 +27,7 @@ export  function LoginForm({onSighnUser}:LoginFormProps){
     setEmail("");
     setPassword("");
     setRole("");
-
+    };
     return(
 <div className="grid grid:cols-2 md:cols-3 gap-8">
     <h2 className="text-xl font-bold bg-grey-600">
