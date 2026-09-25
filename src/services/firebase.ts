@@ -13,7 +13,7 @@ import {
 import { getAuth} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
 import type {Property} from "../types/Property";
-import { UserProfile } from "../types/UserProfile";
+import type { UserProfile } from "../types/UserProfile";
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
