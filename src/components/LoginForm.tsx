@@ -29,6 +29,9 @@ export  function LoginForm({onSighnUser}:LoginFormProps){
     setRole("");
     };
     return(
+        <form onSubmit={handleSubmit} className="flex flex-col-3">
+
+        
 <div className="grid grid:cols-2 md:cols-3 gap-8">
     <h2 className="text-xl font-bold bg-grey-600">
         Login User
@@ -54,8 +57,8 @@ onChange={(e)=>setRole(e.target.value)}
 className="rounded-2xl bg-white"
 />
 
-<button
-onSubmit={handleSubmit}
+<button type="submit"
+
 className="rounded-xl bg-blue-500 text-white text"
 >
 Login    
@@ -66,7 +69,7 @@ Login
 
 
 </div>
-
+</form>
     );
 
 
