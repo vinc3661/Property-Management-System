@@ -8,10 +8,12 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  setDoc,
 } from "firebase/firestore";
 import { getAuth} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
 import type {Property} from "../types/Property";
+import { UserProfile } from "../types/UserProfile";
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -26,7 +28,7 @@ export const db = getFirestore(app);
 export const auth=getAuth(app);
 const PROPERTY_COLLECTION = "properties";
 const TENANT_COLLECTION="tenants";
-
+const PROFILE_COLLECTION="profiles";
 export async function addTenantToCloud(
   tenantData: Omit<Tenant, "id">
 ): Promise<Tenant> {
@@ -196,3 +198,26 @@ return Properties;
 
     return unsubscribe;
   }
+
+
+  export async function setUserProfile(id:string, profile:UserProfile){
+    try{
+      const docRef=doc(db,PROFILE_COLLECTION,id);
+      await setDoc(docRef,{
+        email:profile.email,
+        role:profile.role,
+        name:profile.name,
+      });
+      console.log('user profile set:',docRef.id);
+      return{
+        ...profile,
+        id:docRef.id,
+      };
+    }catch(error){
+      console.error('failed to set user profile:',error);
+    throw error;
+      
+    }
+
+
+  };
