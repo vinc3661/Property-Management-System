@@ -188,57 +188,19 @@ catch(error){
             ))}
           </div>
         )}
-        </div>
-
-          
         
-      </div>
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        <div className="md:col-span-1">
-          
-          <div className="md:col-span-2">
-            <h2 className="text-2xl font-bold">
-              Register User
-            </h2>
-            <div className="grid grid-col-1 md:cols-2 gap-4">
-              <AuthCard
-              
-              onRegister={handleRegisterUser}
-              onSignUser={handleSignUser}
-              />
 
-            </div>
-            
-            
-          </div>
-          </div>
-        <div className="grid grid-cols gap-4 md:grid-cols-3">
-          
-          <div className="md:col-span-2">
-              <h2 className="text-2xl font-bold">
-               Login
-              </h2>
-          <div className="grid grid-col-1 md:cols-2 gap-4">
-            <AuthCard
-            
-            onRegister={handleRegisterUser}
-            onSignUser={handleSignUser}
-            />
-          </div>
-          
-          </div>
 
         </div>
-        </div>
+    <AuthCard
+    onRegister={handleRegisterUser}
+    onSignUser={handleSignUser}
+          />
       </div>
-      </div>
+    </div>
+    </div>
     
- 
-    
-
-    
-
-);
+  );
 }
 
 export default App;
