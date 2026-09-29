@@ -3,7 +3,7 @@ import type { Tenant } from "./types/Tenant";
 import { TenantForm } from "./components/TenantForm";
 import { TenantCard } from "./components/Tenantcard";
 import type {Property} from './types/Property';
-import {RegisterUserForm} from './components/RegisterUserForm'
+
 import {
   addTenantToCloud,
   subscribeToTenants,
@@ -22,7 +22,8 @@ import { PropertyCard } from "./components/PropertyCard";
 import type { RegisterData } from "./types/RegisterData";
 import type {LoginData} from "./types/LoginData";
 import {signUser} from "./services/auth";
-import { LoginForm } from "./components/LoginForm";
+
+import { AuthCard } from "./components/AuthCard";
 function App() {
     console.log("APP IS RUNNING");
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -194,10 +195,39 @@ catch(error){
       </div>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         <div className="md:col-span-1">
-          <RegisterUserForm onRegister={handleRegisterUser}/>
+          
+          <div className="md:col-span-2">
+            <h2 className="text-2xl font-bold">
+              Register User
+            </h2>
+            <div className="grid grid-col-1 md:cols-2 gap-4">
+              <AuthCard
+              
+              onRegister={handleRegisterUser}
+              onSignUser={handleSignUser}
+              />
+
+            </div>
+            
+            
+          </div>
           </div>
         <div className="grid grid-cols gap-4 md:grid-cols-3">
-          <LoginForm onSignUser={handleSignUser}/>
+          
+          <div className="md:col-span-2">
+              <h2 className="text-2xl font-bold">
+               Login
+              </h2>
+          <div className="grid grid-col-1 md:cols-2 gap-4">
+            <AuthCard
+            
+            onRegister={handleRegisterUser}
+            onSignUser={handleSignUser}
+            />
+          </div>
+          
+          </div>
+
         </div>
         </div>
       </div>
