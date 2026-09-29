@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {AnimatePresence, easeInOut, motion} from "framer-motion";
+import {AnimatePresence,  motion} from "framer-motion";
 
 
 type LoginData={
