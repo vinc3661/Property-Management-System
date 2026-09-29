@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {AnimatePresence, motion} from "framer-motion";
+import {AnimatePresence, easeInOut, motion} from "framer-motion";
 
 
 type LoginData={
@@ -71,10 +71,10 @@ return(
       {isLoging ?(
         <motion.div
         key="login"
-        initial={{opacity:0 ,x:-30}}
+        initial={{opacity:0 ,x:30}}
         animate={{opacity:1, x:30}}
-        exit={{opacity:0 , x:0}}
-        transition={{duration:0.3}}   
+        exit={{opacity:0 , x:-30}}
+        transition={{duration:0.35,ease:"easeInOut"}}   
      >
  
      <h2 className="text-3xl font-bold mb-2">
@@ -119,7 +119,7 @@ key="register"
 initial={{opacity:0, x:-30}}
 animate={{opacity:1, x:30}}
 exit={{opacity:0, x:0}}
-transition={{duration:0.3}}
+transition={{duration:0.35,ease:"easeInOut"}}
 >
 
 <h2 className="text-2xl font-bold">
