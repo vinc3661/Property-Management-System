@@ -72,7 +72,7 @@ return(
         <motion.div
         key="login"
         initial={{opacity:0 ,x:30}}
-        animate={{opacity:1, x:30}}
+        animate={{opacity:1, x:0}}
         exit={{opacity:0 , x:-30}}
         transition={{duration:0.35,ease:"easeInOut"}}   
      >
@@ -117,7 +117,7 @@ onClick={()=>setIsLoging(false)}
 <motion.div
 key="register"
 initial={{opacity:0, x:-30}}
-animate={{opacity:1, x:30}}
+animate={{opacity:1, x:0}}
 exit={{opacity:0, x:0}}
 transition={{duration:0.35,ease:"easeInOut"}}
 >
@@ -134,7 +134,7 @@ type="email"
 value={registerEmail}
 onChange={(e)=>setRegisterEmail(e.target.value)}
 placeholder="Enter email"
-className="rounded-2xl border-p3"
+className="rounded-2xl border border-grey-300 p-3"
 />
 
 <input
@@ -142,14 +142,14 @@ type="password"
 value={registerPassword}
 onChange={(e)=>setRegisterPassword(e.target.value)}
 placeholder="Enter password"
-className=" rounded-2xl border-p3"
+className=" rounded-2xl border border-grey-300 p-3"
 />
 <input
 type="password"
 onChange={(e)=>setConfimPassword(e.target.value)}
 value={confirmPassword}
 placeholder="confirm password"
-className="border-p3 rounded-2xl"
+className="border border-grey-300 p-3 rounded-2xl"
 />
 
 
