@@ -50,7 +50,7 @@ return {
     console.error("Failed to add tenant to the database:", error);
     throw error;
   }
-}
+};
 
 export async function updateTenantsInCloud(
   id: string,
@@ -64,7 +64,7 @@ export async function updateTenantsInCloud(
     console.error("Failed to update tenant:", error);
     throw error;
   }
-}
+};
 
 export async function deleteTenantFromCloud(
   id: string
@@ -77,7 +77,7 @@ export async function deleteTenantFromCloud(
     console.error("Failed to delete tenant from the cloud:", error);
     throw error;
   }
-}
+};
 
 export function subscribeToTenants(
   onDataUpdate: (tenants: Tenant[]) => void
@@ -100,7 +100,7 @@ export function subscribeToTenants(
   );
 
   return unsubscribe;
-}
+};
 
 export async function getTenantsFromCloud(): Promise<Tenant[]> {
   try {
@@ -117,7 +117,7 @@ export async function getTenantsFromCloud(): Promise<Tenant[]> {
     console.error("Failed to get tenants:", error);
     throw error;
   }
-}
+};
 
 
 export  async function addPropertiesToCloud(PropertyData:Omit<Property,'id'>):Promise<Property>{
@@ -197,7 +197,7 @@ return Properties;
     );
 
     return unsubscribe;
-  }
+  };
 
 
   export async function setUserProfile(id:string, profile:UserProfile){
