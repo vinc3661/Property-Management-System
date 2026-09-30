@@ -23,13 +23,13 @@ import type { RegisterData } from "./types/RegisterData";
 import type {LoginData} from "./types/LoginData";
 import {signUser} from "./services/auth";
 import {SubscribeToListenToAuthState} from "./services/auth"
-
+import type {User} from "./types/UserData";
 import { AuthCard } from "./components/AuthCard";
 function App() {
     console.log("APP IS RUNNING");
   const [tenants, setTenants] = useState<Tenant[]>([]);
    const [properties,setProperties]=useState<Property[]>([]);
-   const [user, setUser]=useState('');
+  const [User, setUserData] = useState<User | null>(null);
   useEffect(() => {
     const unsubscribe = subscribeToTenants((updatedTenants) => {
       setTenants(updatedTenants);
@@ -121,13 +121,22 @@ catch(error){
 
 
  useEffect(()=>{
-const unsubscribe=SubscribeToListenToAuthState((user)=>{
-  setUser(user)
+const unsubscribe=SubscribeToListenToAuthState((User)=>{
+  setUserData(User)
 });
 
 return unsubscribe;
 },[]);
-   
+  if(!User){
+return (
+<AuthCard
+onRegister={handleRegisterUser}
+onSignUser={handleSignUser}
+/>
+);
+
+
+   }
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -202,10 +211,8 @@ return unsubscribe;
 
 
         </div>
-    <AuthCard
-    onRegister={handleRegisterUser}
-    onSignUser={handleSignUser}
-          />
+    
+          
       </div>
     </div>
     </div>

@@ -66,6 +66,6 @@ export function TenantForm({ onAddTenant }: TenantFormProps) {
       <button type="submit">Add Tenant</button>
     </form>
   );
-}
+};
 
 

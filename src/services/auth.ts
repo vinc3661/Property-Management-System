@@ -27,7 +27,7 @@ export async function signUser(email:string,password:string):Promise<void>{
 };
 
 
-export function SubscribeToListenToAuthState(callback: (user: any) => void){
+export function SubscribeToListenToAuthState(callback: (User:any) => void){
   return  onAuthStateChanged (auth,callback);
 };
   
