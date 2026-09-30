@@ -195,7 +195,15 @@ className=" mt-4 text-2xl rounded-2xl bg-blue-600 text-white"
     </div>
 </div>
 
+<div className="w-1/2 hidden bg-blue-600 p-12 text-white md:flex md:flex-col md:justify-center">
+<h2 className="text-4xl font-bold">
+    Welcome
+</h2>
+<p className=" tacking-normal font-semibold mt-4 text-blue-100">
+Take control of your properties with ease. Stay organized, keep track of your tenants, and make property management feel effortless.
+</p>
 
+</div>
 
 </div>
 
