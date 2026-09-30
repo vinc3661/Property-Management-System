@@ -22,14 +22,15 @@ import { PropertyCard } from "./components/PropertyCard";
 import type { RegisterData } from "./types/RegisterData";
 import type {LoginData} from "./types/LoginData";
 import {signUser} from "./services/auth";
-import {SubscribeToListenToAuthState} from "./services/auth"
+import {SubscribeToAuthState} from "./services/auth"
 import type {User} from "./types/UserData";
 import { AuthCard } from "./components/AuthCard";
+import type { User as firebaseUser } from "firebase/auth";
 function App() {
     console.log("APP IS RUNNING");
   const [tenants, setTenants] = useState<Tenant[]>([]);
    const [properties,setProperties]=useState<Property[]>([]);
-  const [User, setUserData] = useState<User | null>(null);
+  const [user, setUser] = useState<firebaseUser | null>(null);
   useEffect(() => {
     const unsubscribe = subscribeToTenants((updatedTenants) => {
       setTenants(updatedTenants);
@@ -121,13 +122,13 @@ catch(error){
 
 
  useEffect(()=>{
-const unsubscribe=SubscribeToListenToAuthState((User)=>{
-  setUserData(User)
+const unsubscribe=SubscribeToAuthState((user)=>{
+  setUser(user);
 });
 
 return unsubscribe;
 },[]);
-  if(!User){
+  if(!user){
 return (
 <AuthCard
 onRegister={handleRegisterUser}
