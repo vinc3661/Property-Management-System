@@ -22,12 +22,14 @@ import { PropertyCard } from "./components/PropertyCard";
 import type { RegisterData } from "./types/RegisterData";
 import type {LoginData} from "./types/LoginData";
 import {signUser} from "./services/auth";
+import {SubscribeToListenToAuthState} from "./services/auth"
 
 import { AuthCard } from "./components/AuthCard";
 function App() {
     console.log("APP IS RUNNING");
   const [tenants, setTenants] = useState<Tenant[]>([]);
    const [properties,setProperties]=useState<Property[]>([]);
+   const [user, setUser]=useState('');
   useEffect(() => {
     const unsubscribe = subscribeToTenants((updatedTenants) => {
       setTenants(updatedTenants);
@@ -117,6 +119,14 @@ catch(error){
   }
  };
 
+
+ useEffect(()=>{
+const unsubscribe=SubscribeToListenToAuthState((user)=>{
+  setUser(user)
+});
+
+return unsubscribe;
+},[]);
    
   return (
     <div className="min-h-screen bg-gray-100 p-8">
