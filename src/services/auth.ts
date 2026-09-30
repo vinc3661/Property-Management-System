@@ -1,6 +1,7 @@
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import {signInWithEmailAndPassword} from "firebase/auth";
 import {auth} from "./firebase";
+import { onAuthStateChanged } from "firebase/auth";
 export async function registerUser(email:string,password:string):Promise<void>{
     try{
  
@@ -24,3 +25,9 @@ export async function signUser(email:string,password:string):Promise<void>{
     throw error;
   }
 };
+
+
+export function ListenToAuthState(callback: (user: any) => void){
+  return  onAuthStateChanged (auth,callback);
+};
+  
