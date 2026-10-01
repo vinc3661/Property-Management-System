@@ -23,7 +23,7 @@ import type { RegisterData } from "./types/RegisterData";
 import type {LoginData} from "./types/LoginData";
 import {signUser} from "./services/auth";
 import {SubscribeToAuthState} from "./services/auth"
-import type {User} from "./types/UserData";
+import type {UserProfile} from "./types/UserProfile";
 import { AuthCard } from "./components/AuthCard";
 import type { User as firebaseUser } from "firebase/auth";
 function App() {

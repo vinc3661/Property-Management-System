@@ -30,7 +30,7 @@ export const auth=getAuth(app);
 const PROPERTY_COLLECTION = "properties";
 const TENANT_COLLECTION="tenants";
 const PROFILE_COLLECTION="profiles";
-const USER_COLLECTION="users";
+
 export async function addTenantToCloud(
   tenantData: Omit<Tenant, "id">
 ): Promise<Tenant> {
@@ -226,7 +226,7 @@ return Properties;
 
   export async function getUserProfile(id:string):Promise<UserProfile | null>{
     try{
-      const docRef=doc(db, USER_COLLECTION,id);
+      const docRef=doc(db, PROFILE_COLLECTION,id);
      const docSnap= await getDoc(docRef);
         
       console.log('user profile get:',docRef.id);
