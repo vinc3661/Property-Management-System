@@ -224,16 +224,16 @@ return Properties;
 
   };
 
-  export async function getUserProfile(id:string,profile:UserProfile):Promise<UserProfile | null>{
+  export async function getUserProfile(id:string):Promise<UserProfile | null>{
     try{
       const docRef=doc(db, USER_COLLECTION,id);
-      await getDoc(docRef);
+     const docSnap= await getDoc(docRef);
         
       console.log('user profile get:',docRef.id);
       return{
-        ...profile,
-        id:docRef.id,
-      };
+        ...docSnap.data(),
+        id:docSnap.id,
+      }as UserProfile;
     }catch(error){
       console.error('failed to get user profile:',error);
       throw error;
