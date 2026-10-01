@@ -126,7 +126,7 @@ export  async function addPropertiesToCloud(PropertyData:Omit<Property,'id'>):Pr
 try{
 const propertyCollection=collection(db,PROPERTY_COLLECTION);
 const docRef=await addDoc(propertyCollection,PropertyData);
-
+console.log('property added with ID:',docRef.id);
 return{
   ...PropertyData,
   id:docRef.id,
@@ -228,7 +228,10 @@ return Properties;
     try{
       const docRef=doc(db, PROFILE_COLLECTION,id);
      const docSnap= await getDoc(docRef);
-        
+        if(!docSnap.exists()){
+          console.log('user profile not found:',docRef.id);
+          return null;
+        }
       console.log('user profile get:',docRef.id);
       return{
         ...docSnap.data(),

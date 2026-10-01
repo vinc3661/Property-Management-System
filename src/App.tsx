@@ -15,6 +15,7 @@ import {
   addPropertiesToCloud,
   
   
+  
 } from "./services/firebase";
 import {registerUser} from "./services/auth"
 import { PropertyForm } from "./components/PropertyForm";
@@ -26,11 +27,13 @@ import {SubscribeToAuthState} from "./services/auth"
 import type {UserProfile} from "./types/UserProfile";
 import { AuthCard } from "./components/AuthCard";
 import type { User as firebaseUser } from "firebase/auth";
+import {getUserProfile} from "./services/firebase";
 function App() {
     console.log("APP IS RUNNING");
   const [tenants, setTenants] = useState<Tenant[]>([]);
    const [properties,setProperties]=useState<Property[]>([]);
   const [user, setUser] = useState<firebaseUser | null>(null);
+  const [UserProfile,setUserProfile]=useState<UserProfile | null>(null);
   useEffect(() => {
     const unsubscribe = subscribeToTenants((updatedTenants) => {
       setTenants(updatedTenants);
@@ -122,8 +125,13 @@ catch(error){
 
 
  useEffect(()=>{
-const unsubscribe=SubscribeToAuthState((user)=>{
+const unsubscribe=SubscribeToAuthState(async(user)=>{
   setUser(user);
+  if(user){
+    
+    const profile= await getUserProfile(user.uid);
+    setUserProfile(profile);
+  }
 });
 
 return unsubscribe;
