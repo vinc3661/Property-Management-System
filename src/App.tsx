@@ -30,7 +30,7 @@ function App() {
     console.log("APP IS RUNNING");
   const [tenants, setTenants] = useState<Tenant[]>([]);
    const [properties,setProperties]=useState<Property[]>([]);
-  const [user, setUser] = useState<firebaseUser | null>(null);
+  const [User, setUser] = useState<firebaseUser | null>(null);
   useEffect(() => {
     const unsubscribe = subscribeToTenants((updatedTenants) => {
       setTenants(updatedTenants);
@@ -128,7 +128,7 @@ const unsubscribe=SubscribeToAuthState((user)=>{
 
 return unsubscribe;
 },[]);
-  if(!user){
+  if(!User){
 return (
 <AuthCard
 onRegister={handleRegisterUser}
