@@ -34,6 +34,7 @@ function App() {
    const [properties,setProperties]=useState<Property[]>([]);
   const [user, setUser] = useState<firebaseUser | null>(null);
   const [UserProfile,setUserProfile]=useState<UserProfile | null>(null);
+  const [authLoading,setAuthLoading]=useState<boolean>(true);
   useEffect(() => {
     const unsubscribe = subscribeToTenants((updatedTenants) => {
       setTenants(updatedTenants);
@@ -136,6 +137,12 @@ const unsubscribe=SubscribeToAuthState(async(user)=>{
 
 return unsubscribe;
 },[]);
+if(authLoading){
+  return <p>Loading your acccount...</p>
+};
+if(!UserProfile ){
+  return <p> Loading your profile...</p>
+};
   if(!user){
 return (
 <AuthCard
@@ -144,6 +151,7 @@ onSignUser={handleSignUser}
 />
 );
 
+ 
 
    }
   return (
@@ -227,6 +235,6 @@ onSignUser={handleSignUser}
     </div>
     
   );
-}
+};
 
 export default App;
