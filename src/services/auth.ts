@@ -32,3 +32,13 @@ export function SubscribeToAuthState(callback: (user:User|null) => void){
   return  onAuthStateChanged (auth,callback);
 };
   
+export  async  function RegisterUser(email:string,password:string):Promise<void>{
+  try{
+  const credentials =  await createUserWithEmailAndPassword(auth,email,password);
+ console.log('user',credentials.user)
+ console.log('user Id',credentials.user.uid);
+    }catch(error){
+    console.error('failed to register user:',error);
+throw error;
+  };
+}
