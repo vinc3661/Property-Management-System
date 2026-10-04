@@ -1,12 +1,9 @@
 import {useState} from 'react';
-
-type UserProfile={
-    email:string,
-    name:string,
-};
+import type {UserProfile} from '../types/UserProfile';
+type UserProfileFormData= Pick<UserProfile, "email"|"name">;
 
 type UserProfileFormProps={
-    onRegisterUserProfile:(data:UserProfile)=>void;
+    onRegisterUserProfile:(data:UserProfileFormData)=>void;
 }
 
 export function UserProfileForm({onRegisterUserProfile}:UserProfileFormProps){
@@ -29,7 +26,7 @@ return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
 <input
-type="text"
+type="email"
 value={email}
 onChange={(e)=>setEmail(e.target.value)}
 placeholder="Enter Email"
