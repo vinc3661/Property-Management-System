@@ -1,219 +1,282 @@
 import { useState } from "react";
-import {AnimatePresence,  motion} from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
-
-type LoginData={
-    email:string,
-    password:string,
+type LoginData = {
+  email: string;
+  password: string;
 };
 
-type  RegisterData={
-email:string,
-password:string,
+type RegisterData = {
+  email: string;
+  password: string;
 };
 
-
-
-
-type AuthCardProps={
-    onRegister:(data:RegisterData)=>void;
-    onSignUser:(data:LoginData)=>void;
+type AuthCardProps = {
+  onRegister: (data: RegisterData) => void;
+  onSignUser: (data: LoginData) => void;
 };
 
-export function AuthCard({onRegister,
-    onSignUser,
-}:AuthCardProps){
-    const [isLoging,setIsLoging]=useState<boolean>(false);
-    const [loginEmail,setLoginEmail]=useState('');
-    const [loginPassword,setLoginPassword]=useState('');
-     const [registerEmail,setRegisterEmail]=useState('');
-     const [registerPassword,setRegisterPassword]=useState('');
-     const [confirmPassword,setConfimPassword]=useState('');
-     const handleLogin=(e:React.FormEvent)=>{
-        e.preventDefault();
+export function AuthCard({
+  onRegister,
+  onSignUser,
+}: AuthCardProps) {
+  const [isLoging, setIsLoging] = useState<boolean>(false);
 
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
-     onSignUser({
-        email:loginEmail,
-        password:loginPassword,
-     });
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [confirmPassword, setConfimPassword] = useState("");
 
-     setLoginEmail('');
-     setLoginPassword('');
-
-
-};
-
-const handleRegister=(e:React.FormEvent)=>{
-
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-if (registerPassword!==confirmPassword){
-    alert('password did not match');
-    return;
 
+    onSignUser({
+      email: loginEmail,
+      password: loginPassword,
+    });
 
-};
-onRegister({
-email:registerEmail,
-password:registerPassword,
-});
+    setLoginEmail("");
+    setLoginPassword("");
+  };
 
-setRegisterEmail('');
-setRegisterPassword('');
-setConfimPassword('');
-};
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
 
-return(
-<div className="min-h-screen flex justify-center items-center bg-gray-600 py-6 ">
-<div className="overflow-hidden flex w-full max-w-5xl rounded-2xl bg-white shadow-2xl">
-    <div className="w-full md:w-1/2 md:p-12 p-8">
-    <AnimatePresence mode="wait">
-      {isLoging ?(
-        <motion.div
-        key="login"
-        initial={{opacity:0 ,x:30}}
-        animate={{opacity:1, x:0}}
-        exit={{opacity:0 , x:-30}}
-        transition={{duration:0.35,ease:"easeInOut"}}   
-     >
- 
-     <h2 className="text-3xl font-bold mb-2">
-        Login
-     </h2>
-<form onSubmit={handleLogin} className="flex flex-col gap-4">
- 
- <input 
- type="email"
- value={loginEmail}
- onChange={(e)=>setLoginEmail(e.target.value)}
-placeholder="Enter email"
-className=" rounded-2xl border-p3"
-/>
-<input
-type="password"
-value={loginPassword}
-onChange={(e)=>setLoginPassword(e.target.value)}
-placeholder="Enter password"
-className=" rounded-2xl border-p3"
-/>
+    if (registerPassword !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
 
-<button
-type="submit"
-className="rounded-2xl bg-blue-600 text-white"
->
-    Login
-</button>
+    onRegister({
+      email: registerEmail,
+      password: registerPassword,
+    });
 
-<button 
-type="button"
-onClick={()=>setIsLoging(false)}
->
-    Don't have an account? Register
-</button>
-</form>
-</motion.div>
-):(
+    setRegisterEmail("");
+    setRegisterPassword("");
+    setConfimPassword("");
+  };
 
-<motion.div
-key="register"
-initial={{opacity:0, x:-30}}
-animate={{opacity:1, x:0}}
-exit={{opacity:0, x:30}}
-transition={{duration:0.35,ease:"easeInOut"}}
->
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
 
-<h2 className="text-2xl font-bold">
+      <div className="grid w-full max-w-5xl grid-cols-1 md:grid-cols-2 bg-white rounded-2xl shadow-lg overflow-hidden">
 
-</h2>
-<form onSubmit={handleRegister}
-className="flex flex-col gap-4"
->
-    
-<input
-type="email"
-value={registerEmail}
-onChange={(e)=>setRegisterEmail(e.target.value)}
-placeholder="Enter email"
-className="rounded-2xl border border-grey-300 p-3"
-/>
-
-<input
-type="password"
-value={registerPassword}
-onChange={(e)=>setRegisterPassword(e.target.value)}
-placeholder="Enter password"
-className=" rounded-2xl border border-grey-300 p-3"
-/>
-<input
-type="password"
-onChange={(e)=>setConfimPassword(e.target.value)}
-value={confirmPassword}
-placeholder="confirm password"
-className="border border-grey-300 p-3 rounded-2xl"
-/>
-
-
-<button
-type="submit"
-className="text-2xl rounded"
->
-    Register
-</button>
-
-</form>
-<button
-type="button"
-onClick={()=>setIsLoging(true)}
-className=" mt-4 text-2xl rounded-2xl bg-blue-600 text-white"
-
->
-    Already have an Account? Login
-</button>
-
-
-
-</motion.div>
-
-
-)}
-
-
-
-
-
-
-
-
-    
-        
-        
-        
         
 
-    </AnimatePresence>
-    
+        <div className="flex items-center p-8 md:p-12">
+
+          <AnimatePresence mode="wait">
+
+            {isLoging ? (
+
+              <motion.div
+                key="login"
+                className="w-full"
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -30 }}
+                transition={{
+                  duration: 0.35,
+                  ease: "easeInOut",
+                }}
+              >
+
+                <h2 className="text-4xl font-bold text-gray-800">
+                  Welcome back
+                </h2>
+
+                <p className="mt-2 mb-8 text-gray-500">
+                  Login to continue.
+                </p>
+
+                <form
+                  onSubmit={handleLogin}
+                  className="flex flex-col gap-5"
+                >
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-medium text-gray-700">
+                      Email
+                    </label>
+
+                    <input
+                      type="email"
+                      value={loginEmail}
+                      onChange={(e) =>
+                        setLoginEmail(e.target.value)
+                      }
+                      placeholder="Enter your email"
+                      className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-medium text-gray-700">
+                      Password
+                    </label>
+
+                    <input
+                      type="password"
+                      value={loginPassword}
+                      onChange={(e) =>
+                        setLoginPassword(e.target.value)
+                      }
+                      placeholder="Enter your password"
+                      className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      required
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
+                  >
+                    Login
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsLoging(false)}
+                    className="text-sm text-gray-500 hover:text-blue-600"
+                  >
+                    Don't have an account?{" "}
+                    <span className="font-semibold">
+                      Register
+                    </span>
+                  </button>
+
+                </form>
+
+              </motion.div>
+
+            ) : (
+
+              <motion.div
+                key="register"
+                className="w-full"
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 30 }}
+                transition={{
+                  duration: 0.35,
+                  ease: "easeInOut",
+                }}
+              >
+
+                <h2 className="text-4xl font-bold text-gray-800">
+                  Create your account
+                </h2>
+
+                <p className="mt-2 mb-8 text-gray-500">
+                  Create your account to get started.
+                </p>
+
+                <form
+                  onSubmit={handleRegister}
+                  className="flex flex-col gap-5"
+                >
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-medium text-gray-700">
+                      Email
+                    </label>
+
+                    <input
+                      type="email"
+                      value={registerEmail}
+                      onChange={(e) =>
+                        setRegisterEmail(e.target.value)
+                      }
+                      placeholder="Enter your email"
+                      className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-medium text-gray-700">
+                      Password
+                    </label>
+
+                    <input
+                      type="password"
+                      value={registerPassword}
+                      onChange={(e) =>
+                        setRegisterPassword(e.target.value)
+                      }
+                      placeholder="Enter your password"
+                      className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-medium text-gray-700">
+                      Confirm password
+                    </label>
+
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) =>
+                        setConfimPassword(e.target.value)
+                      }
+                      placeholder="Confirm your password"
+                      className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      required
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
+                  >
+                    Register
+                  </button>
+
+                </form>
+
+                <button
+                  type="button"
+                  onClick={() => setIsLoging(true)}
+                  className="mt-5 w-full text-sm text-gray-500 hover:text-blue-600"
+                >
+                  Already have an account?{" "}
+                  <span className="font-semibold">
+                    Login
+                  </span>
+                </button>
+
+              </motion.div>
+
+            )}
+
+          </AnimatePresence>
+
+        </div>
+
+        
+
+        <div className="hidden md:flex flex-col justify-center bg-blue-600 p-12 text-white">
+
+          <h2 className="text-5xl font-bold">
+            Welcome
+          </h2>
+
+          <p className="mt-6 text-lg leading-relaxed text-blue-100">
+            Take control of your properties with ease.
+            Stay organized, keep track of your tenants,
+            and make property management feel effortless.
+          </p>
+
+        </div>
+
+      </div>
+
     </div>
-</div>
-
-<div className="w-1/2 hidden bg-blue-600 p-12 text-white md:flex md:flex-col md:justify-center">
-<h2 className="text-4xl font-bold">
-    Welcome
-</h2>
-<p className=" tacking-normal font-semibold mt-4 text-blue-100">
-Take control of your properties with ease. Stay organized, keep track of your tenants, and make property management feel effortless.
-</p>
-
-</div>
-
-</div>
-
-
-);
-
-    
-
-
-
-
-
-};
+  );
+}
