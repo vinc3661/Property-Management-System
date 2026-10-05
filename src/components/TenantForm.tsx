@@ -37,6 +37,7 @@ export function TenantForm({ onAddTenant }: TenantFormProps) {
         placeholder="Tenant name"
         value={name}
         onChange={(e) => setName(e.target.value)}
+        className="bg-white tracking-wide text-gray-700 placeholder-gray-400 focus:outline-none focus:right-2 focus:ring-blue-500 focus:border-blue-500 rounded-md py-2 px-3"
       />
 
       <input
@@ -44,6 +45,7 @@ export function TenantForm({ onAddTenant }: TenantFormProps) {
         placeholder="House number"
         value={houseNumber}
         onChange={(e) => setHouseNumber(e.target.value)}
+        className="bg-white tracking-wide text-gray-700 placeholder-gray-400 focus:outline-none focus:right-2 focus:ring-blue-500 focus:border-blue-500 rounded-md py-2 px-3"
       />
 
       <select
@@ -51,6 +53,7 @@ export function TenantForm({ onAddTenant }: TenantFormProps) {
         onChange={(e) =>
           setPaymentStatus(e.target.value as Tenant["paymentStatus"])
         }
+        className="bg-white tracking-wide text-gray-700 placeholder-gray-400 focus:outline-none focus:right-2 focus:ring-blue-500 focus:border-blue-500 rounded-md py-2 px-3"
       >
         <option value="pending">Pending</option>
         <option value="paid">Paid</option>
