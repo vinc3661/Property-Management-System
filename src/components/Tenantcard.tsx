@@ -123,7 +123,7 @@ export function TenantCard({
       <button
         type="button"
         onClick={() => setIsEditing(true)}
-        className="mt-4 mr-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white"
+        className="mt-4 mr-2 rounded-lg bg-blue-400 backdrop-filter backdrop-blur-sm px-4 py-2 text-sm font-semibold text-white"
       >
         Edit
       </button>

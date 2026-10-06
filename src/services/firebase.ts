@@ -209,6 +209,7 @@ return Properties;
         email:profile.email,
         role:profile.role,
         name:profile.name,
+        landlordId:profile.landlordId,
       });
       console.log('user profile set:',docRef.id);
       return{
