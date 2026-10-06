@@ -122,6 +122,7 @@ function App() {
         email: data.email,
         name: data.name,
         role: null,
+        landlordId:null,
       };
 
       await saveProfileToFirestore(user.uid, profile);
