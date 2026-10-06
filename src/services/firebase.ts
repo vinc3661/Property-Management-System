@@ -10,6 +10,8 @@ import {
   doc,
   setDoc,
   getDoc,
+  query,
+  where,
 } from "firebase/firestore";
 import { getAuth} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
@@ -248,17 +250,22 @@ return Properties;
     export async function AssignLandlord(email:string):Promise<void>{
       try{
         const profileCollection=collection(db,PROFILE_COLLECTION);
-        if(email){
-          const querySnapshot=await getDocs(profileCollection);
-          const userProfileDoc=querySnapshot.docs.find((doc)=>doc.data().email===email);
-          if(userProfileDoc){
-            await updateDoc(userProfileDoc.ref, { role: 'landlord' });
-          console.log('landlord role assigned to user:',userProfileDoc.id);
-          };
-        
-        };
-      }catch(error){
-        console.error('failed to assign lanlord role:',error);
-        throw error;
+        const profileQuery=query(profileCollection,where('email','==',email));
+        const querySnapshot=await getDocs(profileQuery);
+        console.log('querySnapshot:',querySnapshot);
+        const profileDoc=querySnapshot.docs[0];
+        if(profileDoc){
+          await updateDoc(profileDoc.ref,{role:'landlord'});
+          console.log('landlord assigned:',profileDoc.id);
+          return;
+        }
+      if(!profileDoc){
+        console.log('no profile found with email:',email);
+        return;
       }
+      }catch(error){
+        console.error('failed to assign lanllord:',error);  
+        throw error;
+    
+    }
     };
