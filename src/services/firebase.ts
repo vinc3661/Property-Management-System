@@ -245,3 +245,20 @@ return Properties;
       
     };
   
+    export async function AssignLandlord(email:string):Promise<void>{
+      try{
+        const profileCollection=collection(db,PROFILE_COLLECTION);
+        if(email){
+          const querySnapshot=await getDocs(profileCollection);
+          const userProfileDoc=querySnapshot.docs.find((doc)=>doc.data().email===email);
+          if(userProfileDoc){
+            await updateDoc(userProfileDoc.ref, { role: 'landlord' });
+          console.log('landlord role assigned to user:',userProfileDoc.id);
+          };
+        
+        };
+      }catch(error){
+        console.error('failed to assign lanlord role:',error);
+        throw error;
+      }
+    };
