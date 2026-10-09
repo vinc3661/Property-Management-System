@@ -260,8 +260,8 @@ return Properties;
           return;
         }
       if(!profileDoc){
-        console.log('no profile found with email:',email);
-        return;
+      throw new Error(`No profile found with email: ${email}`);
+        
       }
       }catch(error){
         console.error('failed to assign lanllord:',error);  
