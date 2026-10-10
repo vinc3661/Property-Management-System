@@ -183,14 +183,7 @@ function App() {
       console.error("Failed to update property:", error);
     }
   };
-const handleAssigneLandlord=async(email:string)=>{
-  try{
-    await AssignLandlord(email);
-    console.log('landlord assigned successfully');
-  }catch(error){
-    console.error('failed to assign landlord:',error);
-  }
-}; 
+
   if (authLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center">

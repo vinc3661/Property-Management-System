@@ -247,25 +247,4 @@ return Properties;
       
     };
   
-    export async function AssignLandlord(email:string):Promise<void>{
-      try{
-        const profileCollection=collection(db,PROFILE_COLLECTION);
-        const profileQuery=query(profileCollection,where('email','==',email));
-        const querySnapshot=await getDocs(profileQuery);
-        console.log('querySnapshot:',querySnapshot);
-        const profileDoc=querySnapshot.docs[0];
-        if(profileDoc){
-          await updateDoc(profileDoc.ref,{role:'landlord'});
-          console.log('landlord assigned:',profileDoc.id);
-          return;
-        }
-      if(!profileDoc){
-      throw new Error(`No profile found with email: ${email}`);
-        
-      }
-      }catch(error){
-        console.error('failed to assign lanllord:',error);  
-        throw error;
     
-    }
-    };
