@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Property } from "../types/Property";
 
 type PropertyFormProps = {
-  onAddProperty: (newPropertyData: Omit<Property, "id">) => Promise<void>;
+  onAddProperty: (newPropertyData: Omit<Property, "id"| "landlordId">) => Promise<void>;
 };
 
 export function PropertyForm({ onAddProperty }: PropertyFormProps) {
@@ -21,6 +21,7 @@ if(rentAmount===""){
         houseNumber,
         rentAmount,
         status,
+        
       });
 
       setHouseNumber("");

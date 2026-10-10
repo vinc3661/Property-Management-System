@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Tenant } from "../types/Tenant";
 
 type TenantFormProps = {
-  onAddTenant: (tenantData: Omit<Tenant, "id">) => void;
+  onAddTenant: (tenantData: Omit<Tenant, "id"|"landlordId">) => void;
 };
 
 export function TenantForm({ onAddTenant }: TenantFormProps) {
