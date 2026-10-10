@@ -10,8 +10,7 @@ import {
   doc,
   setDoc,
   getDoc,
-  query,
-  where,
+  
 } from "firebase/firestore";
 import { getAuth} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";

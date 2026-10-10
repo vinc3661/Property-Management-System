@@ -12,7 +12,7 @@ import { PropertyForm } from "./components/PropertyForm";
 import { PropertyCard } from "./components/PropertyCard";
 import { AuthCard } from "./components/AuthCard";
 import { UserProfileForm } from "./components/UserProfileForm";
-import { AssignLandlord} from "./services/firebase";
+
 import {
   addTenantToCloud,
   subscribeToTenants,
