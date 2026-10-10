@@ -10,7 +10,8 @@ import {
   doc,
   setDoc,
   getDoc,
-  
+  query,
+  where,
 } from "firebase/firestore";
 import { getAuth} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
@@ -182,26 +183,23 @@ return Properties;
   };
 
   export function subscribeToProperties(
+    landlordId: string,
     onDataUpdate: (properties: Property[]) => void
   ): () => void {
-    const propertyCollection = collection(db, PROPERTY_COLLECTION);
-    const unsubscribe = onSnapshot(
-      propertyCollection,
-      (querySnapshot) => {
-        const properties: Property[] = querySnapshot.docs.map((doc) => ({
-          ...(doc.data() as Omit<Property, "id">),
-          id: doc.id,
-        }));
-        onDataUpdate(properties);
-      },
-      (error) => {
-        console.error("real time sync failed:", error);
-      }
+    const propertiesQuery = query(
+      collection(db, PROPERTY_COLLECTION),
+      where("landlordId", "==", landlordId)
     );
 
-    return unsubscribe;
-  };
+    return onSnapshot(propertiesQuery, (snapshot) => {
+      const properties: Property[] = snapshot.docs.map((propertyDoc) => ({
+        ...(propertyDoc.data() as Omit<Property, "id">),
+        id: propertyDoc.id,
+      }));
 
+      onDataUpdate(properties);
+    });
+  }
 
   export async function setUserProfile(id:string, profile:UserProfile){
     try{
@@ -245,5 +243,7 @@ return Properties;
       };
       
     };
+
+    
   
     
