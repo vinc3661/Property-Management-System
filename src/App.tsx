@@ -24,6 +24,7 @@ import {
   updatePropertiesInCloud,
   getUserProfile,
   setUserProfile as saveProfileToFirestore,
+  landlordId,
 } from "./services/firebase";
 
 import {
@@ -62,12 +63,18 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = subscribeToProperties((propertyData) => {
-      setProperties(propertyData);
+    if(!landlordId){
+      setProperties([]);
+      return;
+    }
+    const unsubscribe = subscribeToProperties(landlordId, (propertyData) => {
+      if(propertyData){
+        setProperties(propertyData);
+      }
     });
 
     return unsubscribe;
-  }, []);
+  }, [landlordId]);
 
   useEffect(() => {
     const unsubscribe = SubscribeToAuthState(async (firebaseUser) => {
