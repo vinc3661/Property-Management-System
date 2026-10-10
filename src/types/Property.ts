@@ -3,4 +3,5 @@ export type Property={
     houseNumber:string;
     status:"occupied"|"vacant";
     rentAmount:number;
+    landlordId: string;
 };
