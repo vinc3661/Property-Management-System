@@ -34,13 +34,14 @@ const TENANT_COLLECTION="tenants";
 const PROFILE_COLLECTION="profiles";
 
 export async function addTenantToCloud(
-  tenantData: Omit<Tenant, "id">
+  landlordId: string,
+  tenantData: Omit<Tenant, "id"|'landlordId'>
 ): Promise<Tenant> {
   try {
     const tenantCollection = collection(db, TENANT_COLLECTION);
     
     console.log("About to save tenant:", tenantData);
-    const docRef = await addDoc(tenantCollection, tenantData);
+    const docRef = await addDoc(tenantCollection, { ...tenantData, landlordId });
 console.log("Tenant saved with ID:", docRef.id);
     
 console.log("🔥 ADD DOC FINISHED");
@@ -49,6 +50,7 @@ console.log("🔥 DOCUMENT ID:", docRef.id);
 return {
       ...tenantData,
       id: docRef.id,
+      landlordId,
     };
   } catch (error) {
     console.error("Failed to add tenant to the database:", error);
@@ -120,10 +122,10 @@ export async function getTenantsFromCloud(): Promise<Tenant[]> {
 };
 
 
-export  async function addPropertiesToCloud(PropertyData:Omit<Property,'id'>):Promise<Property>{
+export  async function addPropertiesToCloud(landlordId: string, PropertyData:Omit<Property,'id'>):Promise<Property>{
 try{
 const propertyCollection=collection(db,PROPERTY_COLLECTION);
-const docRef=await addDoc(propertyCollection,PropertyData);
+const docRef=await addDoc(propertyCollection, { ...PropertyData, landlordId });
 console.log('property added with ID:',docRef.id);
 return{
   ...PropertyData,

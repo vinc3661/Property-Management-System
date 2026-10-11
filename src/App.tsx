@@ -148,9 +148,13 @@ return unsubscribe;
     }
   };
 
-  const handleAddTenant = async (tenant: Omit<Tenant, 'id'>) => {
+  const handleAddTenant = async ( tenantData: Omit<Tenant, 'id'|'landlordId'>) => {
+    if(!landlordId){
+      console.error("cannot add tenant: landlord id is not set");
+      return;
+    }
     try {
-      await addTenantToCloud( tenant);
+      await addTenantToCloud(landlordId, tenantData);
     } catch (error) {
       console.error("Failed to add tenant:", error);
     }
@@ -172,9 +176,9 @@ return unsubscribe;
     }
   };
 
-  const handleAddProperty = async (property: Omit<Property, "id">) => {
+  const handleAddProperty = async (landlordId: string, property: Omit<Property, "id">) => {
     try {
-      await addPropertiesToCloud(property);
+      await addPropertiesToCloud(landlordId, { ...property, landlordId });
     } catch (error) {
       console.error("Failed to add property:", error);
     }
