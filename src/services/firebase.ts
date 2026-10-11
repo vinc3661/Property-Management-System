@@ -122,7 +122,7 @@ export async function getTenantsFromCloud(): Promise<Tenant[]> {
 };
 
 
-export  async function addPropertiesToCloud(landlordId: string, PropertyData:Omit<Property,'id'>):Promise<Property>{
+export  async function addPropertiesToCloud(landlordId: string, PropertyData:Omit<Property,'id'|"landlordId">):Promise<Property>{
 try{
 const propertyCollection=collection(db,PROPERTY_COLLECTION);
 const docRef=await addDoc(propertyCollection, { ...PropertyData, landlordId });
@@ -130,6 +130,7 @@ console.log('property added with ID:',docRef.id);
 return{
   ...PropertyData,
   id:docRef.id,
+  landlordId,
 };
 }catch(error){
   console.error('failed to add Property to Cluod:',error);

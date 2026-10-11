@@ -176,9 +176,13 @@ return unsubscribe;
     }
   };
 
-  const handleAddProperty = async (landlordId: string, property: Omit<Property, "id">) => {
+  const handleAddProperty = async ( property: Omit<Property, "id"|"landlordId">) => {
+   if(!landlordId){
+    console.error("cannot add property: landlord id is not set");
+    return;
+   }
     try {
-      await addPropertiesToCloud(landlordId, { ...property, landlordId });
+      await addPropertiesToCloud(landlordId, property);
     } catch (error) {
       console.error("Failed to add property:", error);
     }
