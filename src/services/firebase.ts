@@ -84,27 +84,23 @@ export async function deleteTenantFromCloud(
 };
 
 export function subscribeToTenants(
+  landlordId: string,
   onDataUpdate: (tenants: Tenant[]) => void
 ): () => void {
-  const tenantCollection = collection(db, TENANT_COLLECTION);
-
-  const unsubscribe = onSnapshot(
-    tenantCollection,
-    (querySnapshot) => {
-      const tenants: Tenant[] = querySnapshot.docs.map((doc) => ({
-        ...(doc.data() as Omit<Tenant, "id">),
-        id: doc.id,
-      }));
-
-      onDataUpdate(tenants);
-    },
-    (error) => {
-      console.error("Real-time sync failed:", error);
-    }
+  const tenantQuery = query(
+    collection(db, TENANT_COLLECTION),
+    where("landlordId", "==", landlordId)
   );
 
-  return unsubscribe;
-};
+  return onSnapshot(tenantQuery, (snapshot) => {
+    const tenants: Tenant[] = snapshot.docs.map((tenantDoc) => ({
+      ...(tenantDoc.data() as Omit<Tenant, "id">),
+      id: tenantDoc.id,
+    }));
+
+    onDataUpdate(tenants);
+  });
+}
 
 export async function getTenantsFromCloud(): Promise<Tenant[]> {
   try {
