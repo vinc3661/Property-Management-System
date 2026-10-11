@@ -24,7 +24,7 @@ import {
   updatePropertiesInCloud,
   getUserProfile,
   setUserProfile as saveProfileToFirestore,
-  landlordId,
+  
 } from "./services/firebase";
 
 import {
@@ -53,6 +53,13 @@ function App() {
 
   const [authLoading, setAuthLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
+
+const landlordId =
+  userProfile?.role === "landlord"
+    ? userProfile.id
+    : userProfile?.role === "caretaker"
+      ? userProfile.landlordId
+      : null;
 
   useEffect(()=>{
 if(!landlordId){
