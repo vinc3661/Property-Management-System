@@ -54,13 +54,18 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = subscribeToTenants((tenantData) => {
-      setTenants(tenantData);
-    });
-
-    return unsubscribe;
-  }, []);
+  useEffect(()=>{
+if(!landlordId){
+  setTenants([]);
+  return;
+}
+const unsubscribe=subscribeToTenants(landlordId,(tenantData)=>{
+  if(tenantData){
+    setTenants(tenantData);
+  }
+});
+return unsubscribe;
+  },[landlordId]);
 
   useEffect(() => {
     if(!landlordId){
