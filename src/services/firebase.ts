@@ -60,7 +60,7 @@ return {
 
 export async function updateTenantsInCloud(
   id: string,
-  updates: Partial<Omit<Tenant, "id">>
+  updates: Partial<Omit<Tenant, "id"|'landlordId'>>
 ): Promise<void> {
   try {
     const tenantDocument = doc(db, TENANT_COLLECTION, id);
@@ -140,7 +140,7 @@ throw error
 
 };
 
-export async function updatePropertiesInCloud(id:string,updates:Partial<Omit<Property,'id'>>):Promise<void>{
+export async function updatePropertiesInCloud(id:string,updates:Partial<Omit<Property,'id'|'landlordId'>>):Promise<void>{
   try{
     const propertyDocument=doc(db,PROPERTY_COLLECTION,id);
     await updateDoc(propertyDocument,updates)
@@ -203,6 +203,9 @@ return Properties;
   export async function setUserProfile(id:string, profile:UserProfile){
     try{
       const docRef=doc(db,PROFILE_COLLECTION,id);
+      console.log("Authenticated UID:", id);
+console.log("Profile being saved:", profile);
+console.log("Auth email:", auth.currentUser?.email);
       await setDoc(docRef,{
         email:profile.email,
         role:profile.role,
