@@ -8,7 +8,7 @@ export type LandlordApplicationStatus =
   export type LandlordApplication = {
 applicationId: string;
 id:string;
-propertyAddress: string;
+property:PropertySubmission[];
 documentPath: string;
 documentFileName: string;
 status:LandlordApplicationStatus;
@@ -16,7 +16,7 @@ submitedAt:string;
 
   }
 
-  export type PropertyApplication = {
+  export type PropertySubmission = {
     id: string;
     propertyAddress: string;
     documentPath: string;
