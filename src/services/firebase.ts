@@ -12,6 +12,9 @@ import {
   getDoc,
   query,
   where,
+  getStorage,
+  ref,
+  uploadBytes,
 } from "firebase/firestore";
 import { getAuth} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
@@ -29,10 +32,11 @@ console.log("Firebase project:", firebaseConfig.projectId);
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth=getAuth(app);
+export const storage=getStorage(app);
 const PROPERTY_COLLECTION = "properties";
 const TENANT_COLLECTION="tenants";
 const PROFILE_COLLECTION="profiles";
-
+const APPLICANTS_COLLECTION="applicats";
 export async function addTenantToCloud(
   landlordId: string,
   tenantData: Omit<Tenant, "id"|'landlordId'>
@@ -247,5 +251,17 @@ console.log("Auth email:", auth.currentUser?.email);
     };
 
     
-  
+  export async function submitLandlordApplication(propertyName:string,propertyAddress:string,ownershipDocument:File):Promise<void>{
+
+const user=auth.currentUser;
+if(!user)
+  throw  new Error('you must have have a signed in user account');
+const userId=user.uid
+
+  const filePath = `landlordApplications/${userId}/${crypto.randomUUID()}-${ownershipDocument.name}`;
+  const fileRef=ref(storage,filePath);
+
+  await uploadBytes(fileRef,ownershipDocument,{
+    ContentType:(ownershipDocument.type)
+  });
     
