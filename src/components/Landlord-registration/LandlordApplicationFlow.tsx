@@ -40,6 +40,19 @@ return(
     <p>Property: {propertyName}</p>
     <p>Address: {propertyAddress}</p>
     <p>Document: {ownershipDocument?.name}</p>
+   <button 
+   type='button'
+   onClick={()=>setStep(2)}
+   >
+    Back
+   </button>
+<button
+type='button'
+onClick={()=>setStep(1)}
+>
+    Edit properties details
+</button>
+
   </div>
 )}
 </>
