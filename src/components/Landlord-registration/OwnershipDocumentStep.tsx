@@ -1,6 +1,9 @@
 import { useState } from 'react';
 
-const OwnershipDocumentStep = () => {
+type OwnershipDocumentStepProps = {
+  onContinue: (file: File) => void;
+};
+const OwnershipDocumentStep = ({onContinue}:OwnershipDocumentStepProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string>('');
   const [isValid, setIsValid]=useState<boolean>(false);
@@ -32,6 +35,7 @@ if (!allowedTypes.includes(selectedFile.type)) {
 
     setError('');
     setIsValid(true);
+    onContinue(selectedFile);
   };
 
   return (
