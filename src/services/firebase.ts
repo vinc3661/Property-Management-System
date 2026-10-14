@@ -12,14 +12,16 @@ import {
   getDoc,
   query,
   where,
-  getStorage,
-  ref,
-  uploadBytes,
+serverTimestamp,  
+
+  
 } from "firebase/firestore";
+import {getStorage,ref,uploadBytes} from "firebase/storage";
 import { getAuth} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
 import type {Property} from "../types/Property";
 import type { UserProfile } from "../types/UserProfile";
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -36,7 +38,7 @@ export const storage=getStorage(app);
 const PROPERTY_COLLECTION = "properties";
 const TENANT_COLLECTION="tenants";
 const PROFILE_COLLECTION="profiles";
-const APPLICANTS_COLLECTION="applicats";
+const APPLICATIN_COLLECTION="applicants";
 export async function addTenantToCloud(
   landlordId: string,
   tenantData: Omit<Tenant, "id"|'landlordId'>
@@ -251,17 +253,33 @@ console.log("Auth email:", auth.currentUser?.email);
     };
 
     
-  export async function submitLandlordApplication(propertyName:string,propertyAddress:string,ownershipDocument:File):Promise<void>{
+export async function submitLandlordApplication(
+  propertyName: string,
+  propertyAddress: string,
+  ownershipDocument: File
+): Promise<void> {
+  const user = auth.currentUser;
 
-const user=auth.currentUser;
-if(!user)
-  throw  new Error('you must have have a signed in user account');
-const userId=user.uid
+  if (!user) {
+    throw new Error("you must have a signed in user account");
+  }
 
+  const userId = user.uid;
   const filePath = `landlordApplications/${userId}/${crypto.randomUUID()}-${ownershipDocument.name}`;
-  const fileRef=ref(storage,filePath);
+  const fileRef = ref(storage, filePath);
 
-  await uploadBytes(fileRef,ownershipDocument,{
-    ContentType:(ownershipDocument.type)
+  await uploadBytes(fileRef, ownershipDocument, {
+    contentType: ownershipDocument.type,
   });
-    
+
+  const applicationRef = doc(db, APPLICATIN_COLLECTION, userId);
+  await setDoc(applicationRef, {
+    applicantId: userId,
+    propertyAddress,
+    propertyName,
+    documentPath: filePath,
+    documentFileName: ownershipDocument.name,
+    submittedAt: serverTimestamp(),
+    status: "pending",
+  });
+}
