@@ -5,7 +5,7 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
-
+import * as jose from "jsr:@panva/jose@6";
 console.log("Hello from Functions!");
 
 // This endpoint uses 'publishable' | 'secret' access, apiKey is required.
