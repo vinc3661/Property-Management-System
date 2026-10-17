@@ -12,7 +12,7 @@ console.log("Hello from Functions!");
 // Use publishable for Client-facing, key-validated endpoints
 // Use secret for Server-to-server, internal calls
 export default {
-  fetch: withSupabase({ auth: ["publishable", "secret"] }, async (req, ctx) => {
+  fetch: withSupabase({ auth: ["publishable"] }, async (req, ctx) => {
     // Called by another service with a secret key
     // ctx.supabaseAdmin bypasses RLS — use for privileged operations
     /*
@@ -34,6 +34,9 @@ export default {
   }),
 };
 
+
+[function.submit-landlord-application]
+verify_jwt=false;
 /* To invoke locally:
 
   1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
