@@ -24,7 +24,7 @@ if(!Token){
 };
 
 const {data,error}= await supabase.functions.invoke(
-    "submit-landlord-application"
+    "submit-landlord-application",
     {
         headers:{
             Authorization:`Bearer ${Token}`,
@@ -36,3 +36,11 @@ const {data,error}= await supabase.functions.invoke(
         
     }
 );
+
+if(error){
+    console.error("supabase function failed:",error);
+throw Error
+};
+
+console.log("function response:",data);
+return data;
