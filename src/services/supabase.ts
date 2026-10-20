@@ -11,3 +11,8 @@ export function supabase=createClient(
     supabaseURL,
     supabasePublishableKey,
 );
+
+const user=auth.currentUser;
+if(!user){
+    throw new Error("you must sign in wit firebase first");
+}
