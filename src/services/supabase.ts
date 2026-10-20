@@ -22,3 +22,17 @@ const Token=await user.getIdToken();
 if(!Token){
     throw new Error("no signed token");
 };
+
+const {data,error}= await supabase.functions.invoke(
+    "submit-landlord-application"
+    {
+        headers:{
+            Authorization:`Bearer ${Token}`,
+
+
+        },
+        body:{}
+
+        
+    }
+);
