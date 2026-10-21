@@ -6,7 +6,7 @@ import * as jose from "jsr:@panva/jose@6";
 
 const firebaseProjectId = Deno.env.get("FIREBASE_PROJECT_ID");
 const bucketName= Deno.env.get("landlord-ownership-documents");
-
+const MAX_FILE_SIZE=10*1024*1024;
 const firebaseJwks = jose.createRemoteJWKSet(
   new URL(
     "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com",
