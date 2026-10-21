@@ -16,12 +16,12 @@ serverTimestamp,
 
   
 } from "firebase/firestore";
-import {getStorage,ref,uploadBytes} from "firebase/storage";
+
 import { getAuth} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
 import type {Property} from "../types/Property";
 import type { UserProfile } from "../types/UserProfile";
-
+import { supabase } from "./supabase";
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -34,7 +34,7 @@ console.log("Firebase project:", firebaseConfig.projectId);
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth=getAuth(app);
-export const storage=getStorage(app);
+
 const PROPERTY_COLLECTION = "properties";
 const TENANT_COLLECTION="tenants";
 const PROFILE_COLLECTION="profiles";
@@ -264,22 +264,49 @@ export async function submitLandlordApplication(
     throw new Error("you must have a signed in user account");
   }
 
-  const userId = user.uid;
-  const filePath = `landlordApplications/${userId}/${crypto.randomUUID()}-${ownershipDocument.name}`;
-  const fileRef = ref(storage, filePath);
+  const token=await user.getIdToken();
+  if(!token){
+    throw new Error("no signed token");
+  }
 
-  await uploadBytes(fileRef, ownershipDocument, {
-    contentType: ownershipDocument.type,
-  });
+  const formData=new FormData();
+  formData.append("propertyName",propertyName);
+  formData.append("file",ownershipDocument);
+  formData.append("propertyADress",propertyAddress);
 
-  const applicationRef = doc(db, APPLICATIN_COLLECTION, userId);
+const {error,data}=await supabase.functions.invoke<{
+  uid:"string";
+  documentPath:"string";
+}>("submit-landlord-application",{
+
+  headers:{
+  "x-firebase-id-token": token,
+},
+body:formData,
+
+});
+
+if(error){
+  console.error("supabase function failed:",error.message);
+  throw new Error(error.message);
+};
+
+if(!data?.documentPath||data.uid !==user.uid){
+  throw new Error("invalid response from document upload service");
+}
+
+const applicationRef = doc(collection(db, APPLICATIN_COLLECTION));
+
   await setDoc(applicationRef, {
-    applicantId: userId,
+    applicantId: user.uid,
     propertyAddress,
     propertyName,
-    documentPath: filePath,
+    documentPath: data.documentPath,
     documentFileName: ownershipDocument.name,
     submittedAt: serverTimestamp(),
     status: "pending",
   });
-}
+};
+
+
+
