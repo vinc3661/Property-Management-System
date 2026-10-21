@@ -5,7 +5,7 @@ import * as jose from "jsr:@panva/jose@6";
 
 
 const firebaseProjectId = Deno.env.get("FIREBASE_PROJECT_ID");
-
+const bucketName= Deno.env.get("landlord-ownership-documents");
 
 const firebaseJwks = jose.createRemoteJWKSet(
   new URL(
