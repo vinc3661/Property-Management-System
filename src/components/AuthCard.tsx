@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-
+import {House} from "lucide-react";
 type LoginData = {
   email: string;
   password: string;
@@ -66,7 +66,7 @@ export function AuthCard({
 
         
 
-        <div className="flex items-center p-8 md:p-12">
+        <div className="order-2 flex min-w-0 items-center p-5 sm:p-8 md:order-1 md:p-8 lg:p-1">
 
           <AnimatePresence mode="wait">
 
@@ -260,23 +260,52 @@ export function AuthCard({
         </div>
 
         
+    
+    <div className="relative order-1 flex min-h-[190px] flex-col justify-between overflow-hidden p-6 text-white sm:min-h-[230px] sm:p-8 md:order-2 md:min-h-[560px] md:p-8 lg:p-12">
 
-        <div className="hidden md:flex flex-col justify-center bg-blue-600 p-12 text-white">
+      <img
+        src="/images/apartment-building.png"
+        alt="Modern apartment building"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
 
-          <h2 className="text-5xl font-bold">
-            Welcome
-          </h2>
+      <div className="absolute inset-0 bg-slate-950/60" />
 
-          <p className="mt-6 text-lg leading-relaxed text-blue-100">
-            Take control of your properties with ease.
-            Stay organized, keep track of your tenants,
-            and make property management feel effortless.
-          </p>
-
-        </div>
-
+      <div className="relative z-10">
+          <div className="flex items-center gap-3">
+    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/30">
+      <House size={25} strokeWidth={1.8} />
+    </div>
+        <p className="text-sm font-semibold uppercase tracking-[0.2em]">
+          PMS
+        </p>
+        <p className="mt-1 text-xs text-white/80 sm:text-sm">
+          Property Management System
+        </p>
       </div>
 
+      <div className="relative z-10 max-w-md py-5">
+        <h2 className="text-2xl font-bold leading-tight sm:text-3xl lg:text-4xl">
+          Better property management starts here.
+        </h2>
+
+        <p className="mt-3 hidden text-sm leading-6 text-white/85 sm:block sm:text-base sm:leading-7">
+          Keep property records organized, track your tenants,
+          and manage your rentals from one place.
+        </p>
+      </div>
+
+      <p className="relative z-10 hidden text-sm text-white/70 md:block">
+        Simplifying the way you manage properties.
+      </p>
+
     </div>
+
+  </div>
+</div>
+      </div>
+      
+
+    
   );
 }
