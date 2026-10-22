@@ -12,6 +12,7 @@ import { PropertyForm } from "./components/PropertyForm";
 import { PropertyCard } from "./components/PropertyCard";
 import { AuthCard } from "./components/AuthCard";
 import { UserProfileForm } from "./components/UserProfileForm";
+import { LandlordApplicationFlow } from "./components/Landlord-registration/LandlordApplicationFlow";
 
 import {
   addTenantToCloud,
@@ -24,7 +25,6 @@ import {
   updatePropertiesInCloud,
   getUserProfile,
   setUserProfile as saveProfileToFirestore,
-  
 } from "./services/firebase";
 
 import {
@@ -54,36 +54,45 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
 
-const landlordId =
-  userProfile?.role === "landlord"
-    ? userProfile.id
-    : userProfile?.role === "caretaker"
-      ? userProfile.landlordId
-      : null;
-
-  useEffect(()=>{
-if(!landlordId){
-  setTenants([]);
-  return;
-}
-const unsubscribe=subscribeToTenants(landlordId,(tenantData)=>{
-  if(tenantData){
-    setTenants(tenantData);
-  }
-});
-return unsubscribe;
-  },[landlordId]);
+  const landlordId =
+    userProfile?.role === "landlord"
+      ? userProfile.id
+      : userProfile?.role === "caretaker"
+        ? userProfile.landlordId
+        : null;
 
   useEffect(() => {
-    if(!landlordId){
+    if (!landlordId) {
+      setTenants([]);
+      return;
+    }
+
+    const unsubscribe = subscribeToTenants(
+      landlordId,
+      (tenantData) => {
+        if (tenantData) {
+          setTenants(tenantData);
+        }
+      }
+    );
+
+    return unsubscribe;
+  }, [landlordId]);
+
+  useEffect(() => {
+    if (!landlordId) {
       setProperties([]);
       return;
     }
-    const unsubscribe = subscribeToProperties(landlordId, (propertyData) => {
-      if(propertyData){
-        setProperties(propertyData);
+
+    const unsubscribe = subscribeToProperties(
+      landlordId,
+      (propertyData) => {
+        if (propertyData) {
+          setProperties(propertyData);
+        }
       }
-    });
+    );
 
     return unsubscribe;
   }, [landlordId]);
@@ -141,7 +150,7 @@ return unsubscribe;
         email: data.email,
         name: data.name,
         role: null,
-        landlordId:null,
+        landlordId: null,
       };
 
       await saveProfileToFirestore(user.uid, profile);
@@ -155,11 +164,14 @@ return unsubscribe;
     }
   };
 
-  const handleAddTenant = async ( tenantData: Omit<Tenant, 'id'|'landlordId'>) => {
-    if(!landlordId){
-      console.error("cannot add tenant: landlord id is not set");
+  const handleAddTenant = async (
+    tenantData: Omit<Tenant, "id" | "landlordId">
+  ) => {
+    if (!landlordId) {
+      console.error("Cannot add tenant: landlord ID is not set.");
       return;
     }
+
     try {
       await addTenantToCloud(landlordId, tenantData);
     } catch (error) {
@@ -175,7 +187,10 @@ return unsubscribe;
     }
   };
 
-  const handleUpdateTenant = async (id:string, updates: Partial<Omit<Tenant, 'id'>>) => {
+  const handleUpdateTenant = async (
+    id: string,
+    updates: Partial<Omit<Tenant, "id">>
+  ) => {
     try {
       await updateTenantsInCloud(id, updates);
     } catch (error) {
@@ -183,11 +198,14 @@ return unsubscribe;
     }
   };
 
-  const handleAddProperty = async ( property: Omit<Property, "id"|"landlordId">) => {
-   if(!landlordId){
-    console.error("cannot add property: landlord id is not set");
-    return;
-   }
+  const handleAddProperty = async (
+    property: Omit<Property, "id" | "landlordId">
+  ) => {
+    if (!landlordId) {
+      console.error("Cannot add property: landlord ID is not set.");
+      return;
+    }
+
     try {
       await addPropertiesToCloud(landlordId, property);
     } catch (error) {
@@ -203,7 +221,10 @@ return unsubscribe;
     }
   };
 
-  const handleUpdateProperty = async (id:string, updates: Partial<Omit<Property, 'id'>>) => {
+  const handleUpdateProperty = async (
+    id: string,
+    updates: Partial<Omit<Property, "id">>
+  ) => {
     try {
       await updatePropertiesInCloud(id, updates);
     } catch (error) {
@@ -275,6 +296,20 @@ return unsubscribe;
           </p>
         </header>
 
+        
+        <section className="mb-8 rounded-2xl bg-white p-6 shadow-md">
+          <h2 className="mb-2 text-2xl font-bold">
+            Apply for landlord access
+          </h2>
+
+          <p className="mb-6 text-gray-600">
+            Submit your property details and ownership document for review.
+          </p>
+
+          <LandlordApplicationFlow />
+        </section>
+
+        
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <section className="rounded-2xl bg-white p-6 shadow-md">
             <h2 className="mb-2 text-2xl font-bold">

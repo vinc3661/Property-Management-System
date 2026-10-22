@@ -275,8 +275,8 @@ export async function submitLandlordApplication(
   formData.append("propertyADress",propertyAddress);
 
 const {error,data}=await supabase.functions.invoke<{
-  uid:"string";
-  documentPath:"string";
+  uid:string,
+  documentPath:string,
 }>("submit-landlord-application",{
 
   headers:{
