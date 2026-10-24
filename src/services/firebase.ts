@@ -310,27 +310,3 @@ const applicationRef = doc(collection(db, APPLICATIN_COLLECTION));
 
 
 
-
-
-
-const { data, error } = await supabase.functions.invoke<{
-  answer: string;
-}>("open-ai", {
-  headers: {
-    "x-firebase-id-token": token,
-  },
-  body: {
-    question: "",
-  },
-});
-
-if (error) {
-  console.error("Supabase function failed:", error);
-  throw error;
-}
-
-if (typeof data?.answer !== "string" || !data.answer.trim()) {
-  throw new Error("The AI function returned no answer");
-}
-
-console.log("AI answer:", data.answer);
