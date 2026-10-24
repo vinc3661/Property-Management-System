@@ -24,8 +24,8 @@ if (!projectID){
 
 if (req.method !=="POST"){
   respond.json(
-    {error:"the request method is wrong"},
-    {status:401},
+    {error:"method not allowed"},
+    {status:405,headers:Allow:"POST"},
   );
 };
 
@@ -45,10 +45,11 @@ let uid=useruid;
       token,
       publicjwks,
     }
-    issuer:"https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");
-    audince:"https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");  
-    alogarithm:[]
+    issuer: `https://securetoken.google.com/${projectId}`
+    audience:"projectId"
+    alogarithm:[RS256]
   );
+const uid=payload.sub;
 
   if (typeOf payload.sub !=="string"||!payload.sub){
     response.json(
@@ -56,9 +57,26 @@ let uid=useruid;
       {error:401},
     )
     return Response.json({
-      error:"invalid or expired firebase token"},
-    {status:401},
+    message:"firebase token verified successfully"},
     );
+
+  
+
   }),
+
+}catch(error){
+  console.error("firebase token verification:"error);
+
+
+response Response.json({
+  errror:"invalid or expired firebase token"
+},
+{status:401}
+);
+
 };
+
+  
+
+
 
