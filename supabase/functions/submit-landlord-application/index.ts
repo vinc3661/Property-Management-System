@@ -5,9 +5,6 @@ import * as jose from "jsr:@panva/jose@6";
 
 const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
 
-if (!projectId) {
-  throw new Error("Missing FIREBASE_PROJECT_ID environment variable");
-}
 
 const publicJwks = jose.createRemoteJWKSet(
   new URL(
@@ -19,6 +16,13 @@ export default {
   fetch: withSupabase(
     { auth: ["publishable"] },
     async (req, ctx) => {
+if (!projectId){
+  Response.json(
+    {error:"projectID not configured"},
+    {status:500}
+  );
+}
+
       if (req.method !== "POST") {
         return Response.json(
           { error: "Method not allowed" },
@@ -55,7 +59,7 @@ export default {
           );
         }
 
-        // Temporary test response.
+        
         return Response.json({
           message: "Firebase token verified successfully",
           uid,
