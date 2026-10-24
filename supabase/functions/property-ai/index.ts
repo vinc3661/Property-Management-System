@@ -30,13 +30,35 @@ if (req.method !=="POST"){
 };
 
 
+     
+const token=await req.headers.get("x-firebase-id-token": token,)
+if (!token){
+response.json(
+  {error:"signed token was not found"},
+  {status:401},
+);
 
+};
 
-    const { name } = await req.json();
+let uid=useruid;
+    const { payload } = await jose.jwtVerify(
+      token,
+      publicjwks,
+    }
+    issuer:"https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");
+    audince:"https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");  
+    alogarithm:[]
+  );
 
+  if (typeOf payload.sub !=="string"||!payload.sub){
+    response.json(
+      {error:"invalid firebase user identity"},
+      {error:401},
+    )
     return Response.json({
-      message: `Hello ${name}!`,
-    });
+      error:"invalid or expired firebase token"},
+    {status:401},
+    );
   }),
 };
 
