@@ -320,7 +320,7 @@ const { data, error } = await supabase.functions.invoke<{
     "x-firebase-id-token": token,
   },
   body: {
-    question: "Which properties are vacant?",
+    question: "",
   },
 });
 
