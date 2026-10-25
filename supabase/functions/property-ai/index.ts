@@ -23,6 +23,17 @@ if (!projectId){
   );
 }
 
+
+const serviceAccountJson=await Deno.env.get(
+  "FIREBASE_SERVICE_ACCOUNT_JSON"
+);
+if (!seviceAccountJson){
+  return Response.json(
+    {error:"FIREBASE_SERVICE_ACCOUNT_JSON not configured"},
+    {status:500}
+  );
+};
+
       if (req.method !== "POST") {
         return Response.json(
           { error: "Method not allowed" },
