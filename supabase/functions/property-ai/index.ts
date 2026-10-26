@@ -12,6 +12,21 @@ const publicJwks = jose.createRemoteJWKSet(
   )
 );
 
+
+export async function getGoogleAccessToken(
+  serviceAccountJson:string
+):Promise<string>{
+
+const serviceAccount= json.parse(serviceAccountJson);
+
+const clientEmail=serviceAccount.client_email;
+const projectKey=serviceAccount.project_key;
+const  tokenUri=serviceAccount.uri?? "https://oauth2.googleapis.com/token";
+
+};
+
+
+
 export default {
   fetch: withSupabase(
     { auth: ["publishable"] },
