@@ -61,7 +61,12 @@ assertion,
 
 });
 
-
+if(!response.ok){
+  console.error("Google token request failed:",
+    response.status
+  );
+  throw new Error("could not Authenticate with google");
+}
 
 };
 
