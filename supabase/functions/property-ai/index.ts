@@ -20,14 +20,34 @@ export async function getGoogleAccessToken(
 const serviceAccount= json.parse(serviceAccountJson);
 
 const clientEmail=serviceAccount.client_email;
-const projectKey=serviceAccount.project_key;
+const privateKey=serviceAccount.private_key;
 const  tokenUri=serviceAccount.uri?? "https://oauth2.googleapis.com/token";
 
-if(typeOf clientEmail !=="string" || typeOf projectKey !=="string"){
+if(typeOf clientEmail !=="string" || typeOf privateKey !=="string"){
 throw new Error ("invalid firebase service configuration");
 };
 
 const now=Math.floor(Date.now()/1000);
+
+
+const privateKeyobject=await jose.importPKCS#8(
+  privateKey,
+  "RS256"
+);
+
+const assertion=await new jose.signJwt({
+  scope: "https://www.googleapis.com/auth/datastore",
+})
+
+.setProtectedHeaders(alg:"RS256", type:"JWT");
+.setIssuer(clientEmail);
+.setSubject(clientEmail);
+.setAudince(tokenUri);
+.setIssuedAt(now);
+.setExpiration(now+3600);
+sign(privateKeyObject);
+
+
 
 
 };
