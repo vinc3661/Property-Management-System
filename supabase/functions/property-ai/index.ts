@@ -70,6 +70,13 @@ if(!response.ok){
 
 };
 
+const result=await response.json()
+
+  if(typeOf result.access_token !=="string"){
+    throw new Error ("Google did not return an access token");
+
+  }
+  return result.access_token;
 
 
 export default {
