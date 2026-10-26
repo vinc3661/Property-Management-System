@@ -24,10 +24,10 @@ if (!projectId){
 }
 
 
-const serviceAccountJson=await Deno.env.get(
+const serviceAccountJson=Deno.env.get(
   "FIREBASE_SERVICE_ACCOUNT_JSON"
 );
-if (!seviceAccountJson){
+if (!serviceAccountJson){
   return Response.json(
     {error:"FIREBASE_SERVICE_ACCOUNT_JSON not configured"},
     {status:500}
