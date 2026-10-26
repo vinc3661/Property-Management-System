@@ -27,6 +27,8 @@ if(typeOf clientEmail !=="string" || typeOf projectKey !=="string"){
 throw new Error ("invalid firebase service configuration");
 };
 
+const now=Math.floor(Date.now()/1000);
+
 
 };
 
