@@ -48,6 +48,19 @@ const assertion=await new jose.signJwt({
 sign(privateKeyObject);
 
 
+const response= await fetch(tokenUri,{
+  method:"POST",
+
+headers:{
+  content_type:"application/x-www-form-urlencoded",
+};
+body: new URLSearchParamas({
+  grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+assertion,
+}),
+
+});
+
 
 
 };
