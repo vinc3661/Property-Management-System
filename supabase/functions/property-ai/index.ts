@@ -23,6 +23,11 @@ const clientEmail=serviceAccount.client_email;
 const projectKey=serviceAccount.project_key;
 const  tokenUri=serviceAccount.uri?? "https://oauth2.googleapis.com/token";
 
+if(typeOf clientEmail !=="string" || typeOf projectKey !=="string"){
+throw new Error ("invalid firebase service configuration");
+};
+
+
 };
 
 
