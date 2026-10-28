@@ -78,6 +78,44 @@ const result=await response.json()
   }
   return result.access_token;
 
+export async function getFirestoreDocument(
+  access_token:string;
+  documentPath:string;
+):Promise<Record<string,unknown>|nul>{
+
+if(!ProjectID){
+   throw new Error("firebase project id is missing");
+};
+
+
+
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export default {
   fetch: withSupabase(
