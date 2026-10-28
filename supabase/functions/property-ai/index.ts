@@ -107,7 +107,9 @@ headers:{
   });
 
 
-
+if(response===404){
+  return null;
+}
 
 
 
