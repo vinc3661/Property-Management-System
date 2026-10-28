@@ -5,7 +5,6 @@ import * as jose from "jsr:@panva/jose@6";
 
 const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
 
-
 const publicJwks = jose.createRemoteJWKSet(
   new URL(
     "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
@@ -13,160 +12,123 @@ const publicJwks = jose.createRemoteJWKSet(
 );
 
 
-export async function getGoogleAccessToken(
-  serviceAccountJson:string
-):Promise<string>{
+async function getGoogleAccessToken(
+  serviceAccountJson: string
+): Promise<string> {
+  const serviceAccount = JSON.parse(serviceAccountJson);
 
-const serviceAccount= json.parse(serviceAccountJson);
+  const clientEmail = serviceAccount.client_email;
+  const privateKey = serviceAccount.private_key;
+  const tokenUri = serviceAccount.token_uri;
 
-const clientEmail=serviceAccount.client_email;
-const privateKey=serviceAccount.private_key;
-const  tokenUri=serviceAccount.uri?? "https://oauth2.googleapis.com/token";
-
-if(typeOf clientEmail !=="string" || typeOf privateKey !=="string"){
-throw new Error ("invalid firebase service configuration");
-};
-
-const now=Math.floor(Date.now()/1000);
-
-
-const privateKeyobject=await jose.importPKCS#8(
-  privateKey,
-  "RS256"
-);
-
-const assertion=await new jose.signJwt({
-  scope: "https://www.googleapis.com/auth/datastore",
-})
-
-.setProtectedHeaders(alg:"RS256", type:"JWT");
-.setIssuer(clientEmail);
-.setSubject(clientEmail);
-.setAudince(tokenUri);
-.setIssuedAt(now);
-.setExpiration(now+3600);
-sign(privateKeyObject);
-
-
-const response= await fetch(tokenUri,{
-  method:"POST",
-
-headers:{
-  content_type:"application/x-www-form-urlencoded",
-};
-body: new URLSearchParamas({
-  grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-assertion,
-}),
-
-});
-
-if(!response.ok){
-  console.error("Google token request failed:",
-    response.status
-  );
-  throw new Error("could not Authenticate with google");
-}
-
-};
-
-const result=await response.json()
-
-  if(typeOf result.access_token !=="string"){
-    throw new Error ("Google did not return an access token");
-
+  if (!clientEmail || !privateKey || !tokenUri) {
+    throw new Error("Invalid Firebase service account configuration");
   }
-  return result.access_token;
 
-export async function getFirestoreDocument(
-  access_token:string;
-  documentPath:string;
-):Promise<Record<string,unknown>|nul>{
+  const key = await jose.importPKCS8(privateKey, "RS256");
 
-if(!ProjectID){
-   throw new Error("firebase project id is missing");
-};
+  const now = Math.floor(Date.now() / 1000);
 
-const encodedPath=documentPath
-.split("/")
-.map((segment)=>encodedURLComponent(segment))
-.join("/");
+  const assertion = await new jose.SignJWT({
+    scope: "https://www.googleapis.com/auth/datastore",
+  })
+    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setIssuer(clientEmail)
+    .setSubject(clientEmail)
+    .setAudience(tokenUri)
+    .setIssuedAt(now)
+    .setExpirationTime(now + 3600)
+    .sign(key);
 
-const url =
-  `https://firestore.googleapis.com/v1/projects/${projectId}` +
-  `/databases/(default)/documents/${encodedPath}`;
-
-const response=await fetch(url,
-  {
-method:"Get",
-headers:{
-  Authorization:`Beare ${access_token}`,
-},
-
-
+  const response = await fetch(tokenUri, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
   });
 
+  if (!response.ok) {
+    console.error("Google access token request failed:", response.status);
+    throw new Error("Could not obtain Google access token");
+  }
 
-if(response.status===404){
-  return null;
-};
- if(!response.ok){
-  console.error("firestore document request failed:", response.status);
-  throw new Error(:"could not retrieve firestore document");
- };
+  const result = await response.json();
 
- return await response.json();
+  if (typeof result.access_token !== "string") {
+    throw new Error("Google access token was missing from the response");
+  }
 
-
-};
-
-
+  return result.access_token;
+}
 
 
+async function getFirestoreDocument(
+  accessToken: string,
+  documentPath: string
+): Promise<Record<string, unknown> | null> {
+  if (!projectId) {
+    throw new Error("Firebase project ID is missing");
+  }
 
+  const encodedPath = documentPath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
 
+  const url =
+    `https://firestore.googleapis.com/v1/projects/${projectId}` +
+    `/databases/(default)/documents/${encodedPath}`;
 
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 
+  if (response.status === 404) {
+    return null;
+  }
 
+  if (!response.ok) {
+    console.error(
+      "Firestore document request failed:",
+      response.status
+    );
+    throw new Error("Could not retrieve Firestore document");
+  }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return await response.json();
+}
 
 export default {
   fetch: withSupabase(
     { auth: ["publishable"] },
     async (req, ctx) => {
-if (!projectId){
- return Response.json(
-    {error:"projectID not configured"},
-    {status:500}
-  );
-}
+      
+      if (!projectId) {
+        return Response.json(
+          { error: "Firebase project ID not configured" },
+          { status: 500 }
+        );
+      }
 
+      const serviceAccountJson = Deno.env.get(
+        "FIREBASE_SERVICE_ACCOUNT_JSON"
+      );
 
-const serviceAccountJson=Deno.env.get(
-  "FIREBASE_SERVICE_ACCOUNT_JSON"
-);
-if (!serviceAccountJson){
-  return Response.json(
-    {error:"FIREBASE_SERVICE_ACCOUNT_JSON not configured"},
-    {status:500}
-  );
-};
+      if (!serviceAccountJson) {
+        return Response.json(
+          { error: "Firebase service account not configured" },
+          { status: 500 }
+        );
+      }
 
+      
       if (req.method !== "POST") {
         return Response.json(
           { error: "Method not allowed" },
@@ -174,6 +136,7 @@ if (!serviceAccountJson){
         );
       }
 
+      // 3. Get the Firebase ID token supplied by the frontend.
       const token = req.headers.get("x-firebase-id-token");
 
       if (!token) {
@@ -183,31 +146,24 @@ if (!serviceAccountJson){
         );
       }
 
+      
+      let uid: string;
+
       try {
-        const { payload } = await jose.jwtVerify(
-          token,
-          publicJwks,
-          {
-            issuer: `https://securetoken.google.com/${projectId}`,
-            audience: projectId,
-            algorithms: ["RS256"],
-          }
-        );
+        const { payload } = await jose.jwtVerify(token, publicJwks, {
+          issuer: `https://securetoken.google.com/${projectId}`,
+          audience: projectId,
+          algorithms: ["RS256"],
+        });
 
-        const uid = payload.sub;
-
-        if (typeof uid !== "string" || !uid) {
+        if (typeof payload.sub !== "string" || !payload.sub) {
           return Response.json(
             { error: "Invalid Firebase user identity" },
             { status: 401 }
           );
         }
 
-        
-        return Response.json({
-          message: "Firebase token verified successfully",
-          uid,
-        });
+        uid = payload.sub;
       } catch (error) {
         console.error("Firebase token verification failed:", error);
 
@@ -216,11 +172,55 @@ if (!serviceAccountJson){
           { status: 401 }
         );
       }
+
+      
+      try {
+        const googleAccessToken = await getGoogleAccessToken(
+          serviceAccountJson
+        );
+
+        const profile = await getFirestoreDocument(
+          googleAccessToken,
+          `profiles/${uid}`
+        );
+
+        if (!profile) {
+          return Response.json(
+            { error: "User profile not found" },
+            { status: 403 }
+          );
+        }
+
+        const fields = profile.fields as
+          | Record<string, { stringValue?: string }>
+          | undefined;
+
+        const role = fields?.role?.stringValue;
+
+        if (role !== "landlord") {
+          return Response.json(
+            {
+              error:
+                "AI access is currently available to landlords only",
+            },
+            { status: 403 }
+          );
+        }
+
+        
+        return Response.json({
+          message: "Firebase authentication and profile lookup successful",
+          uid,
+          role,
+        });
+      } catch (error) {
+        console.error("Property AI request failed:", error);
+
+        return Response.json(
+          { error: "Could not verify property AI access" },
+          { status: 500 }
+        );
+      }
     }
   ),
 };
-
-  
-
-
-
