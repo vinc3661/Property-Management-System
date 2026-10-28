@@ -96,6 +96,22 @@ const url =
   `https://firestore.googleapis.com/v1/projects/${projectId}` +
   `/databases/(default)/documents/${encodedPath}`;
 
+const response=await fetch(url,
+  {
+method:"Get",
+headers:{
+  Authorization:`Beare ${access_token}`,
+},
+
+
+  });
+
+
+
+
+
+
+
 };
 
 
