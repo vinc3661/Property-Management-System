@@ -107,11 +107,15 @@ headers:{
   });
 
 
-if(response===404){
+if(response.status===404){
   return null;
-}
+};
+ if(!response.ok){
+  console.error("firestore document request failed:", response.status);
+  throw new Error(:"could not retrieve firestore document");
+ };
 
-
+ return await response.json();
 
 
 };
