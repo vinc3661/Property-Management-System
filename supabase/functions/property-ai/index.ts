@@ -87,8 +87,14 @@ if(!ProjectID){
    throw new Error("firebase project id is missing");
 };
 
+const encodedPath=documentPath
+.split("/")
+.map((segment)=>encodedURLComponent(segment))
+.join("/");
 
-
+const url =
+  `https://firestore.googleapis.com/v1/projects/${projectId}` +
+  `/databases/(default)/documents/${encodedPath}`;
 
 };
 
