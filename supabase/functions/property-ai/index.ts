@@ -129,12 +129,6 @@ const query = {
       },
     }
     
-    
-    if(role!=="landlord"){
-      throw new Error("unauthorized to send request");
-    };
-const verifiedLandlordId=uid;
-
  const response = await fetch(url, {
   method: "POST",
   headers: {
