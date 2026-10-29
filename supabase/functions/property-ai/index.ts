@@ -114,11 +114,14 @@ if(!projectId){
   throw new Error("firebase projectId not configured");
 };
 
-const url=st url =
+const url=
     `https://firestore.googleapis.com/v1/projects/${projectId}` +
     `/databases/(default)/documents:runQuery`;
 
-
+    if(role!=="landlord"){
+      throw new Error("unauthorized ");
+    };
+const verifiedLandlordId=uid;
 
  };
 
