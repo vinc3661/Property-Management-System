@@ -103,7 +103,16 @@ async function getFirestoreDocument(
   }
 
   return await response.json();
-}
+};
+ export async function getFirestoreCollection(
+  accessToken:string,
+  collection:string,
+  landlordId:string,
+ ){
+
+
+
+ };
 
 export default {
   fetch: withSupabase(
