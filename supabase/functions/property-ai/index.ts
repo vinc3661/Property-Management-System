@@ -127,31 +127,22 @@ const query = {
         op: "EQUAL",
         value: { stringValue: landlordId },
       },
-    },
-  },
-};
-
-
-
-
-
-
-
-
-
+    }
+    
+    
     if(role!=="landlord"){
-      throw new Error("unauthorized ");
+      throw new Error("unauthorized to send request");
     };
 const verifiedLandlordId=uid;
 
- 
-const response=fetch(
-  url,{
-method:"Get",
-headers:{
-authorization:`Bearer ${access_token}`
-},
-)};
+ const response = await fetch(url, {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify(query),
+});
 
 if(response.status===404){
   return null
