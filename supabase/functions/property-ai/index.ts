@@ -118,12 +118,52 @@ const url=
     `https://firestore.googleapis.com/v1/projects/${projectId}` +
     `/databases/(default)/documents:runQuery`;
 
+const query = {
+  structuredQuery: {
+    from: [{ collectionId: collection }],
+    where: {
+      fieldFilter: {
+        field: { fieldPath: "landlordId" },
+        op: "EQUAL",
+        value: { stringValue: landlordId },
+      },
+    },
+  },
+};
+
+
+
+
+
+
+
+
+
     if(role!=="landlord"){
       throw new Error("unauthorized ");
     };
 const verifiedLandlordId=uid;
 
- };
+ 
+const response=fetch(
+  url,{
+method:"Get",
+headers:{
+authorization:`Bearer ${access_token}`
+},
+)};
+
+if(response.status===404){
+  return null
+}
+
+if(!response.ok){
+  console.error("firebase collection request failed:", response.status);
+}
+
+return await response.json();
+
+};
 
 export default {
   fetch: withSupabase(
