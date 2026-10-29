@@ -110,6 +110,14 @@ async function getFirestoreDocument(
   landlordId:string,
  ){
 
+if(!projectId){
+  throw new Error("firebase projectId not configured");
+};
+
+const url=st url =
+    `https://firestore.googleapis.com/v1/projects/${projectId}` +
+    `/databases/(default)/documents:runQuery`;
+
 
 
  };
