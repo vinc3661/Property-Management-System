@@ -11,9 +11,7 @@ const publicJwks = jose.createRemoteJWKSet(
   ),
 );
 
-// --------------------------------------------------
-// 1. Obtain a Google OAuth access token
-// --------------------------------------------------
+
 
 async function getGoogleAccessToken(
   serviceAccountJson: string,
@@ -67,9 +65,7 @@ async function getGoogleAccessToken(
   return result.access_token;
 }
 
-// --------------------------------------------------
-// 2. Retrieve a single Firestore document
-// --------------------------------------------------
+
 
 async function getFirestoreDocument(
   accessToken: string,
@@ -110,9 +106,7 @@ async function getFirestoreDocument(
   return await response.json();
 }
 
-// --------------------------------------------------
-// 3. Define Firestore value types
-// --------------------------------------------------
+
 
 type FirestoreValue = {
   stringValue?: string;
@@ -129,9 +123,7 @@ type FirestoreValue = {
   };
 };
 
-// --------------------------------------------------
-// 4. Decode Firestore values
-// --------------------------------------------------
+
 
 function decodeFirestoreValue(value: FirestoreValue): unknown {
   if ("stringValue" in value) {
@@ -190,9 +182,7 @@ function decodeFirestoreFields(
   );
 }
 
-// --------------------------------------------------
-// 5. Retrieve a Firestore collection
-// --------------------------------------------------
+
 
 async function getFirestoreCollection(
   accessToken: string,
@@ -282,9 +272,7 @@ async function getFirestoreCollection(
     });
 }
 
-// --------------------------------------------------
-// 6. Handle incoming requests
-// --------------------------------------------------
+
 
 export default {
   fetch: withSupabase(
@@ -304,7 +292,7 @@ export default {
         );
       }
 
-      // 7. Receive and validate the question
+      
 
       let requestBody: unknown;
 
@@ -356,7 +344,7 @@ export default {
         );
       }
 
-      // 9. Receive and verify Firebase ID token
+      
 
       const token = req.headers.get("x-firebase-id-token");
 
@@ -397,7 +385,7 @@ export default {
         );
       }
 
-      // 10. Authorize user and retrieve property data
+      
 
       try {
         const googleAccessToken = await getGoogleAccessToken(
@@ -441,7 +429,7 @@ export default {
             );
           }
 
-          // Verify that the assigned profile is actually a landlord.
+          
 
           const landlordDocument = await getFirestoreDocument(
             googleAccessToken,
@@ -478,7 +466,7 @@ export default {
           );
         }
 
-        // 11. Retrieve authorized tenants and properties
+      
 
         const [tenants, properties] = await Promise.all([
           getFirestoreCollection(
@@ -500,7 +488,7 @@ export default {
           properties,
         };
 
-        // 13. Send question and data to OpenAI
+        
 
         const openAIResponse = await fetch(
           "https://api.openai.com/v1/responses",
@@ -557,7 +545,7 @@ export default {
           );
         }
 
-        // 15. Read OpenAI response
+        
 
         const openAIResult: unknown = await openAIResponse.json();
 
@@ -570,7 +558,7 @@ export default {
           throw new Error("Invalid OpenAI response");
         }
 
-        // 16. Extract generated text
+        
 
         const answer = openAIResult.output
           .filter(
