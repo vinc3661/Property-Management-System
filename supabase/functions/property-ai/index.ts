@@ -282,9 +282,7 @@ async function getFirestoreCollection(
     });
 }
 
-// --------------------------------------------------
-// 6. Handle incoming requests
-// --------------------------------------------------
+
 
 export default {
   fetch: withSupabase(
@@ -296,6 +294,35 @@ export default {
           { status: 500 },
         );
       }
+       
+
+let questionBody=unknown;
+
+try{
+requestBody=await req.json();
+}catch{
+  return response.json(
+    {error:"invalid request body"},
+    {status:400}
+  );
+  }
+if (
+  typeof requestBody !== "object" ||
+  requestBody === null ||
+  !("question" in requestBody) ||
+  typeof requestBody.question !== "string" ||
+  !requestBody.question.trim()
+) {
+  return Response.json(
+    { error: "A valid question is required" },
+    { status: 400 },
+  );
+}
+
+
+const question=requestBody.question.trim();
+
+
 
       if (req.method !== "POST") {
         return Response.json(
@@ -304,7 +331,7 @@ export default {
         );
       }
 
-      const serviceAccountJson = Deno.env.get(
+    const serviceAccountJson = Deno.env.get(
         "FIREBASE_SERVICE_ACCOUNT_JSON",
       );
 
@@ -315,7 +342,7 @@ export default {
         );
       }
 
-      // 7. Receive and verify Firebase ID token
+      
 
       const token = req.headers.get("x-firebase-id-token");
 
@@ -356,7 +383,7 @@ export default {
         );
       }
 
-      // 8. Retrieve profile and authorize user
+      
 
       try {
         const googleAccessToken = await getGoogleAccessToken(
@@ -398,7 +425,7 @@ export default {
             );
           }
 
-          // Verify that the assigned profile is actually a landlord.
+          
 
           const landlordDocument = await getFirestoreDocument(
             googleAccessToken,
@@ -435,7 +462,7 @@ export default {
           );
         }
 
-        // 9. Retrieve authorized tenants and properties
+        
 
         const [tenants, properties] = await Promise.all([
           getFirestoreCollection(
