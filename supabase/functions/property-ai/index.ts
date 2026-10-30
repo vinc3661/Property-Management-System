@@ -333,36 +333,25 @@ export default {
         const googleAccessToken = await getGoogleAccessToken(
           serviceAccountJson,
         );
+             let verifiedLandlordId: string;
 
-        const profile = await getFirestoreDocument(
-          googleAccessToken,
-          `profiles/${uid}`,
-        );
+if (profile.role === "landlord") {
+  verifiedLandlordId = uid;
+} else if (profile.role === "caretaker") {
+  if (!profile.landlordId) {
+    return new Response(
+      JSON.stringify({ error: "Caretaker is not assigned to a landlord" }),
+      { status: 403 }
+    );
+  }
 
-        if (!profile) {
-          return Response.json(
-            { error: "User profile not found" },
-            { status: 403 },
-          );
-        }
-
-        const fields = profile.fields as
-          | Record<string, { stringValue?: string }>
-          | undefined;
-
-        const role = fields?.role?.stringValue;
-
-        if (role !== "landlord") {
-          return Response.json(
-            {
-              error:
-                "AI access is currently available to landlords only",
-            },
-            { status: 403 },
-          );
-        }
-
-        const verifiedLandlordId = uid;
+  verifiedLandlordId = profile.landlordId;
+} else {
+  return new Response(
+    JSON.stringify({ error: "Unauthorized" }),
+    { status: 403 }
+  );
+}
 
         const [tenants, properties] = await Promise.all([
           getFirestoreCollection(
