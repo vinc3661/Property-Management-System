@@ -11,6 +11,9 @@ const publicJwks = jose.createRemoteJWKSet(
   ),
 );
 
+// --------------------------------------------------
+// 1. Obtain a Google OAuth access token
+// --------------------------------------------------
 
 async function getGoogleAccessToken(
   serviceAccountJson: string,
@@ -64,6 +67,10 @@ async function getGoogleAccessToken(
   return result.access_token;
 }
 
+// --------------------------------------------------
+// 2. Retrieve a single Firestore document
+// --------------------------------------------------
+
 async function getFirestoreDocument(
   accessToken: string,
   documentPath: string,
@@ -103,6 +110,10 @@ async function getFirestoreDocument(
   return await response.json();
 }
 
+// --------------------------------------------------
+// 3. Define Firestore value types
+// --------------------------------------------------
+
 type FirestoreValue = {
   stringValue?: string;
   integerValue?: string;
@@ -117,6 +128,11 @@ type FirestoreValue = {
     fields?: Record<string, FirestoreValue>;
   };
 };
+
+// --------------------------------------------------
+// 4. Decode Firestore values
+// --------------------------------------------------
+
 function decodeFirestoreValue(value: FirestoreValue): unknown {
   if ("stringValue" in value) {
     return value.stringValue;
@@ -163,7 +179,6 @@ function decodeFirestoreValue(value: FirestoreValue): unknown {
   throw new Error("Unsupported Firestore value type");
 }
 
-
 function decodeFirestoreFields(
   fields: Record<string, FirestoreValue>,
 ): Record<string, unknown> {
@@ -174,6 +189,11 @@ function decodeFirestoreFields(
     ]),
   );
 }
+
+// --------------------------------------------------
+// 5. Retrieve a Firestore collection
+// --------------------------------------------------
+
 async function getFirestoreCollection(
   accessToken: string,
   collection: string,
@@ -262,6 +282,10 @@ async function getFirestoreCollection(
     });
 }
 
+// --------------------------------------------------
+// 6. Handle incoming requests
+// --------------------------------------------------
+
 export default {
   fetch: withSupabase(
     { auth: ["publishable"] },
@@ -290,6 +314,8 @@ export default {
           { status: 500 },
         );
       }
+
+      // 7. Receive and verify Firebase ID token
 
       const token = req.headers.get("x-firebase-id-token");
 
@@ -330,28 +356,86 @@ export default {
         );
       }
 
+      // 8. Retrieve profile and authorize user
+
+      try {
         const googleAccessToken = await getGoogleAccessToken(
           serviceAccountJson,
         );
-             let verifiedLandlordId: string;
 
-if (profile.role === "landlord") {
-  verifiedLandlordId = uid;
-} else if (profile.role === "caretaker") {
-  if (!profile.landlordId) {
-    return new Response(
-      JSON.stringify({ error: "Caretaker is not assigned to a landlord" }),
-      { status: 403 }
-    );
-  }
+        const profileDocument = await getFirestoreDocument(
+          googleAccessToken,
+          `profiles/${uid}`,
+        );
 
-  verifiedLandlordId = profile.landlordId;
-} else {
-  return new Response(
-    JSON.stringify({ error: "Unauthorized" }),
-    { status: 403 }
-  );
-}
+        if (
+          !profileDocument ||
+          !profileDocument.fields ||
+          typeof profileDocument.fields !== "object"
+        ) {
+          return Response.json(
+            { error: "User profile not found" },
+            { status: 403 },
+          );
+        }
+
+        const profile = decodeFirestoreFields(
+          profileDocument.fields as Record<string, FirestoreValue>,
+        );
+
+        let verifiedLandlordId: string;
+
+        if (profile.role === "landlord") {
+          verifiedLandlordId = uid;
+        } else if (profile.role === "caretaker") {
+          if (
+            typeof profile.landlordId !== "string" ||
+            !profile.landlordId
+          ) {
+            return Response.json(
+              { error: "Caretaker is not assigned to a landlord" },
+              { status: 403 },
+            );
+          }
+
+          // Verify that the assigned profile is actually a landlord.
+
+          const landlordDocument = await getFirestoreDocument(
+            googleAccessToken,
+            `profiles/${profile.landlordId}`,
+          );
+
+          if (
+            !landlordDocument ||
+            !landlordDocument.fields ||
+            typeof landlordDocument.fields !== "object"
+          ) {
+            return Response.json(
+              { error: "Assigned landlord profile not found" },
+              { status: 403 },
+            );
+          }
+
+          const landlordProfile = decodeFirestoreFields(
+            landlordDocument.fields as Record<string, FirestoreValue>,
+          );
+
+          if (landlordProfile.role !== "landlord") {
+            return Response.json(
+              { error: "Invalid landlord assignment" },
+              { status: 403 },
+            );
+          }
+
+          verifiedLandlordId = profile.landlordId;
+        } else {
+          return Response.json(
+            { error: "Unauthorized" },
+            { status: 403 },
+          );
+        }
+
+        // 9. Retrieve authorized tenants and properties
 
         const [tenants, properties] = await Promise.all([
           getFirestoreCollection(
@@ -367,7 +451,7 @@ if (profile.role === "landlord") {
         ]);
 
         return Response.json({
-          message: "Landlord access verified and data retrieved",
+          message: "User access verified and data retrieved",
           data: {
             tenants,
             properties,
