@@ -273,15 +273,12 @@ export async function submitLandlordApplication(
   formData.append("propertyName",propertyName);
   formData.append("file",ownershipDocument);
   formData.append("propertyADress",propertyAddress);
-
+  formData.append("firebaseIdToken",token ); 
 const {error,data}=await supabase.functions.invoke<{
   uid:string,
   documentPath:string,
 }>("submit-landlord-application",{
 
-  headers:{
-  "x-firebase-id-token": token,
-},
 body:formData,
 
 });
