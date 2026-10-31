@@ -2,7 +2,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import {signInWithEmailAndPassword} from "firebase/auth";
 import {auth} from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup,signInWithPhoneNumber } from "firebase/auth";
 import type { User } from "firebase/auth";
 export async function registerUser(email:string,password:string):Promise<void>{
     try{
@@ -46,6 +46,20 @@ return credentials.user;
   throw error;
 
 
+}
+};
+
+
+
+export async function signWithNumber(phoneNumber:string):Promise<void>{
+try{
+const credentials=await signInWithPhoneNumber(auth,phoneNumber);
+console.log("confirmation result:",credentials);
+console.log("verification id:",credentials.verificationId);
+
+}catch(error){
+  console.error("failed to sign in with number");
+  throw Error;
 }
 
 
