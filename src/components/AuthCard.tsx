@@ -15,12 +15,14 @@ type AuthCardProps = {
   onRegister: (data: RegisterData) => void;
   onSignUser: (data: LoginData) => void;
   onGoogleSignIn:()=> void;
+  onNumberSignIn:()=>void;
 };
 
 export function AuthCard({
   onRegister,
   onSignUser,
   onGoogleSignIn,
+  onNumberSignIn,
 }: AuthCardProps) {
   const [isLoging, setIsLoging] = useState<boolean>(false);
 
@@ -99,6 +101,13 @@ export function AuthCard({
     </svg>
   </span>
   Continue with Google
+</button>
+
+<button
+onClick={onNumberSignIn}
+className="text-2xl, bg-blue-600 text-white rounded-2xl "
+>
+  Sign in with phone number
 </button>
           <AnimatePresence mode="wait">
 

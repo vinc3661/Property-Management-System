@@ -4,32 +4,36 @@ import type { FormEvent } from "react";
 import { House, UserRound, Mail, ArrowRight } from "lucide-react";
 import type { UserProfile } from "../types/UserProfile";
 
-type UserProfileFormData = Pick<UserProfile, "email" | "name">;
+type UserProfileFormData = Pick<UserProfile, "email" | "name"|"phoneNumber">;
 
 type UserProfileFormProps = {
   onRegisterUserProfile: (data: UserProfileFormData) => void;
   initialName?:string;
   initialEmail?:string;
+  initialPhoneNumber?:string;
 };
 
 export function UserProfileForm({
   onRegisterUserProfile,
   initialEmail,
   initialName,
+  initialPhoneNumber,
 }: UserProfileFormProps) {
   const [email, setEmail] = useState(initialEmail ?? "");
   const [name, setName] = useState(initialName ?? "");
-
+  const [phoneNumber,setPhoneNumber]=useState(initialPhoneNumber??"");
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     onRegisterUserProfile({
       email: email.trim(),
       name: name.trim(),
+      phoneNumber: phoneNumber.trim(),
     });
 
     setEmail("");
     setName("");
+   setPhoneNumber("");
   };
 
   return (

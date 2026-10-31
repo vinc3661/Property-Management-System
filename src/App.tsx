@@ -33,6 +33,7 @@ import {
   signUser,
   SubscribeToAuthState,
   signInWithGoogle,
+  signWithNumber,
 } from "./services/auth";
 
 type RegisterData = {
@@ -147,6 +148,14 @@ console.log("user signed in");
 }
   };
 
+  const handleNumberSignIn=async (phoneNumber:string)=>{
+   try{
+await signWithNumber(phoneNumber);
+   }catch(error){
+    console.error("sign in with phone number failed");
+}
+};
+
   const handleSaveUserProfile = async (
     data: Pick<UserProfile, "email" | "name">
   ) => {
@@ -164,6 +173,7 @@ console.log("user signed in");
         name: data.name,
         role: null,
         landlordId: null,
+        phoneNumber:null,
       };
 
       await saveProfileToFirestore(user.uid, profile);
@@ -261,6 +271,7 @@ console.log("user signed in");
         onSignUser={handleSignUser}
         onRegister={handleRegisterUser}
         onGoogleSignIn={handleGoogleSignIn}
+        onNumberSignIn={handleNumberSignIn}
         
       />
     );
