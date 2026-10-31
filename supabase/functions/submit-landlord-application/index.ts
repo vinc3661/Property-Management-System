@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "http://localhost:5173",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-firebase-id-token",
+    "authorization, x-client-info, apikey, content-type",
 };
 
 const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
