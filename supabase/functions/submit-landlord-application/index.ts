@@ -72,15 +72,16 @@ export default {
       const formData=await req.formData();
       const token=formData.get("firebaseIdToken");
 
-      if (!token) {
-        return Response.json(
-          { error: "Firebase ID token was not provided" },
-          {
-            status: 401,
-            headers: corsHeaders,
-          }
-        );
-      }
+
+if (typeof token !== "string" || !token) {
+  return Response.json(
+    { error: "Firebase ID token was not provided" },
+    {
+      status: 401,
+      headers: corsHeaders,
+    }
+  );
+}
 
       try {
         
