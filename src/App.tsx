@@ -33,8 +33,9 @@ import {
   signUser,
   SubscribeToAuthState,
   signInWithGoogle,
-  signWithNumber,
+  
 } from "./services/auth";
+
 
 type RegisterData = {
   email: string;
@@ -147,14 +148,6 @@ console.log("user signed in");
 
 }
   };
-
-  const handleNumberSignIn=async (phoneNumber:string)=>{
-   try{
-await signWithNumber(phoneNumber);
-   }catch(error){
-    console.error("sign in with phone number failed");
-}
-};
 
   const handleSaveUserProfile = async (
     data: Pick<UserProfile, "email" | "name">
@@ -271,7 +264,7 @@ await signWithNumber(phoneNumber);
         onSignUser={handleSignUser}
         onRegister={handleRegisterUser}
         onGoogleSignIn={handleGoogleSignIn}
-        onNumberSignIn={handleNumberSignIn}
+        
         
       />
     );
