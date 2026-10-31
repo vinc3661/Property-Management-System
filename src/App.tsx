@@ -280,6 +280,9 @@ console.log("user signed in");
 
           <UserProfileForm
             onRegisterUserProfile={handleSaveUserProfile}
+            initialEmail={user.email ?? ""}
+            initialName={user.displayName ?? ""}
+
           />
 
           {profileSaving && (

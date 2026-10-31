@@ -8,13 +8,17 @@ type UserProfileFormData = Pick<UserProfile, "email" | "name">;
 
 type UserProfileFormProps = {
   onRegisterUserProfile: (data: UserProfileFormData) => void;
+  initialName?:string;
+  initialEmail?:string;
 };
 
 export function UserProfileForm({
   onRegisterUserProfile,
+  initialEmail,
+  initialName,
 }: UserProfileFormProps) {
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
+  const [email, setEmail] = useState(initialEmail ?? "");
+  const [name, setName] = useState(initialName ?? "");
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
