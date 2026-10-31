@@ -2,6 +2,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import {signInWithEmailAndPassword} from "firebase/auth";
 import {auth} from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import type { User } from "firebase/auth";
 export async function registerUser(email:string,password:string):Promise<void>{
     try{
@@ -32,3 +33,21 @@ export function SubscribeToAuthState(callback: (user:User|null) => void){
   return  onAuthStateChanged (auth,callback);
 };
   
+export async function signinGoogle():Promise<User>{
+try{
+const Provider= new GoogleAuthProvider();
+
+const credentials= await signInWithPopup(auth,Provider);
+console.log("Google user:",credentials.user);
+console.log("Google user Id:",credentials.user.uid)
+return credentials.user;
+}catch(error){
+  console.error("google sign in failed:",error);
+  throw error;
+
+
+}
+
+
+
+};

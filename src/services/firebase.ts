@@ -38,7 +38,7 @@ export const auth=getAuth(app);
 const PROPERTY_COLLECTION = "properties";
 const TENANT_COLLECTION="tenants";
 const PROFILE_COLLECTION="profiles";
-const APPLICATIN_COLLECTION="applicants";
+const APPLICATION_COLLECTION="applicants";
 export async function addTenantToCloud(
   landlordId: string,
   tenantData: Omit<Tenant, "id"|'landlordId'>
@@ -292,7 +292,7 @@ if(!data?.documentPath||data.uid !==user.uid){
   throw new Error("invalid response from document upload service");
 }
 
-const applicationRef = doc(collection(db, APPLICATIN_COLLECTION));
+const applicationRef = doc(collection(db, APPLICATION_COLLECTION));
 
   await setDoc(applicationRef, {
     applicantId: user.uid,
