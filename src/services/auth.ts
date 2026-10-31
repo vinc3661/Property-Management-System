@@ -33,7 +33,7 @@ export function SubscribeToAuthState(callback: (user:User|null) => void){
   return  onAuthStateChanged (auth,callback);
 };
   
-export async function signinGoogle():Promise<User>{
+export async function signInWithGoogle():Promise<User>{
 try{
 const Provider= new GoogleAuthProvider();
 

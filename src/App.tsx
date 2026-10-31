@@ -25,6 +25,7 @@ import {
   updatePropertiesInCloud,
   getUserProfile,
   setUserProfile as saveProfileToFirestore,
+  signInWithGoogle,
 } from "./services/firebase";
 
 import {
@@ -134,6 +135,17 @@ function App() {
     }
   };
 
+  const handleSignInWithGoogle=async () =>{
+try{
+await signInWithGoogle();
+console.log("user signed in");
+
+}catch(error){
+  console.error("sign in with Google failed");
+
+}
+  };
+
   const handleSaveUserProfile = async (
     data: Pick<UserProfile, "email" | "name">
   ) => {
@@ -231,6 +243,8 @@ function App() {
       console.error("Failed to update property:", error);
     }
   };
+
+
 
   if (authLoading) {
     return (
