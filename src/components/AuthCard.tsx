@@ -14,6 +14,7 @@ type RegisterData = {
 type AuthCardProps = {
   onRegister: (data: RegisterData) => void;
   onSignUser: (data: LoginData) => void;
+  onGoogleSignIn:()=> void;
 };
 
 export function AuthCard({

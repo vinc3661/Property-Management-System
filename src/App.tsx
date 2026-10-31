@@ -25,13 +25,14 @@ import {
   updatePropertiesInCloud,
   getUserProfile,
   setUserProfile as saveProfileToFirestore,
-  signInWithGoogle,
+  
 } from "./services/firebase";
 
 import {
   registerUser,
   signUser,
   SubscribeToAuthState,
+  signInWithGoogle,
 } from "./services/auth";
 
 type RegisterData = {
@@ -135,7 +136,7 @@ function App() {
     }
   };
 
-  const handleSignInWithGoogle=async () =>{
+  const handleGoogleSignIn=async () =>{
 try{
 await signInWithGoogle();
 console.log("user signed in");
@@ -259,6 +260,8 @@ console.log("user signed in");
       <AuthCard
         onSignUser={handleSignUser}
         onRegister={handleRegisterUser}
+        onGoogleSignIn={handleGoogleSignIn}
+        
       />
     );
   }
