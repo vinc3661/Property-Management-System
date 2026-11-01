@@ -217,6 +217,7 @@ console.log("Auth email:", auth.currentUser?.email);
         role:profile.role,
         name:profile.name,
         landlordId:profile.landlordId,
+        phoneNumber:profile.phoneNumber,
       });
       console.log('user profile set:',docRef.id);
       return{
