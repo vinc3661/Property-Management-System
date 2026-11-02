@@ -2,9 +2,25 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 import * as jose from "jsr:@panva/jose@6";
+import {verifyFirebaseToken,getFirestoreProfile} from "../_shared/firebase.ts";
+const app=(Deno.env.get("APP_URL")??"http://localhost:5173").
+replace(/\/$/,"");
+
+const INVITATION_EXPIRATION_HOURS=48;
+
+function generateToken():string{
+  const bytes=crypto.GetRandomvalues(new unit8Array(32))
+return Array.from(bytes)
+.map((byte)=>byte.toString(16).padStart(2,"0"))
+.join("");
+
+
+
+}
+
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "http://localhost:5173",
+  "Access-Control-Allow-Origin": app,
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
@@ -68,7 +84,7 @@ export default {
             algorithms: ["RS256"],
           }
         );
-
+ const user=payload.sub
         
         if (typeof payload.sub !== "string" || !payload.sub) {
           return Response.json(
