@@ -1,59 +1,49 @@
 
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
-import * as jose from "jsr:@panva/jose@6";
-import {verifyFirebaseToken,getFirestoreProfile} from "../_shared/firebase.ts";
-const app=(Deno.env.get("APP_URL")??"http://localhost:5173").
-replace(/\/$/,"");
-
-const INVITATION_EXPIRATION_HOURS=48;
-
-function generateToken():string{
-  const bytes=crypto.getRandomValues(new Uint8Array(32));
-  return Array.from(bytes)
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-export function hashToken(token:string):Promise<string>{
-  const encodedToken=new TextEncoder().encode(token);
-  const hash=await crypto.subtle.digest("SHA-256",encodedToken);
-  return Array.from(new Uint8Array(hash))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-.join("");
-
-
-}
-
+import {
+  verifyFirebaseToken,
+  getFirestoreProfile,
+} from "../_shared/firebase.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": app,
+  "Access-Control-Allow-Origin": "http://localhost:5173",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
 
-const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
+const appUrl = (
+  Deno.env.get("APP_URL") ?? "http://localhost:5173"
+).replace(/\/$/, "");
 
-const publicJWKS = jose.createRemoteJWKSet(
-  new URL(
-    "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
-  )
-);
+const INVITATION_EXPIRY_HOURS = 48;
+
+function generateSecureToken(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+
+  return Array.from(bytes)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function hashToken(token: string): Promise<string> {
+  const encodedToken = new TextEncoder().encode(token);
+  const hash = await crypto.subtle.digest("SHA-256", encodedToken);
+
+  return Array.from(new Uint8Array(hash))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 export default {
   fetch: withSupabase(
     { auth: ["publishable"] },
-    async (req, _ctx) => {
-
-      
+    async (req, ctx) => {
       if (req.method === "OPTIONS") {
-        return new Response("ok", {
-          headers: corsHeaders,
-        });
+        return new Response("ok", { headers: corsHeaders });
       }
 
-      
       if (req.method !== "POST") {
         return Response.json(
           { error: "Method not allowed" },
@@ -61,57 +51,104 @@ export default {
         );
       }
 
-
-      if (!projectId) {
-        return Response.json(
-          { error: "FIREBASE_PROJECT_ID is not configured" },
-          { status: 500, headers: corsHeaders }
-        );
-      }
-
-      
-      const formData = await req.formData();
-      const token = formData.get("firebaseIdToken");
-
-      if (typeof token !== "string" || !token) {
-        return Response.json(
-          { error: "Firebase ID token was not provided" },
-          { status: 401, headers: corsHeaders }
-        );
-      }
-
-      
       try {
-        const { payload } = await jose.jwtVerify(
-          token,
-          publicJWKS,
-          {
-            issuer: `https://securetoken.google.com/${projectId}`,
-            audience: projectId,
-            algorithms: ["RS256"],
-          }
-        );
- const user=payload.sub
-        
-        if (typeof payload.sub !== "string" || !payload.sub) {
+        const body = await req.json();
+
+        const email =
+          typeof body.email === "string"
+            ? body.email.trim().toLowerCase()
+            : "";
+
+        const firebaseIdToken =
+          typeof body.firebaseIdToken === "string"
+            ? body.firebaseIdToken
+            : "";
+
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           return Response.json(
-            { error: "Failed to identify signed-in user" },
+            { error: "A valid caretaker email is required" },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        if (!firebaseIdToken) {
+          return Response.json(
+            { error: "Firebase ID token is required" },
+            { status: 401, headers: corsHeaders }
+          );
+        }
+
+    
+        const payload = await verifyFirebaseToken(firebaseIdToken);
+        const landlordId = payload.sub;
+
+        if (!landlordId) {
+          return Response.json(
+            { error: "Could not identify the signed-in user" },
             { status: 401, headers: corsHeaders }
           );
         }
 
         
+        const profile = await getFirestoreProfile(landlordId);
+
+        const role = profile.fields?.role?.stringValue;
+
+        if (role !== "landlord") {
+          return Response.json(
+            { error: "Only approved landlords can invite caretakers" },
+            { status: 403, headers: corsHeaders }
+          );
+        }
+
+        
+        const rawToken = generateSecureToken();
+        const tokenHash = await hashToken(rawToken);
+
+        const expiresAt = new Date(
+          Date.now() + INVITATION_EXPIRY_HOURS * 60 * 60 * 1000
+        ).toISOString();
+
+        
+        const { error: insertError } = await ctx.supabaseAdmin
+          .from("caretaker_invitations")
+          .insert({
+            token_hash: tokenHash,
+            landlord_id: landlordId,
+            invited_email: email,
+            status: "pending",
+            expires_at: expiresAt,
+          });
+
+        if (insertError) {
+          console.error("Invitation insert failed:", insertError);
+
+          return Response.json(
+            { error: "Could not create invitation" },
+            { status: 500, headers: corsHeaders }
+          );
+        }
+
+      
+        const invitationUrl =
+          `${appUrl}/invite/${rawToken}`;
+
         return Response.json(
-          { message: "Firebase token verified successfully" },
-          { headers: corsHeaders }
+          {
+            message: "Invitation created successfully",
+            invitationUrl,
+            invitedEmail: email,
+            expiresAt,
+          },
+          { status: 201, headers: corsHeaders }
         );
 
       } catch (error) {
-        console.error("Firebase token verification failed:", error);
+        console.error("Create invitation error:", error);
 
         return Response.json(
-          { error: "Invalid or expired Firebase ID token" },
-          { status: 401, headers: corsHeaders }
+          { error: "Unable to create caretaker invitation" },
+          { status: 500, headers: corsHeaders }
         );
       }
     }
