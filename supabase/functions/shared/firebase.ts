@@ -93,3 +93,50 @@ export async function getFirestoreProfile(uid: string) {
 
   return response.json();
 }
+
+
+export async function updateFirestoreProfile(
+  uid: string,
+  updates: {
+    role: "caretaker";
+    landlordId: string;
+  }
+) {
+  const accessToken = await getFirestoreAccessToken();
+
+  const url = new URL(
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/profiles/${uid}`
+  );
+
+  
+  url.searchParams.append("updateMask.fieldPaths", "role");
+  url.searchParams.append("updateMask.fieldPaths", "landlordId");
+
+  const response = await fetch(url.toString(), {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fields: {
+        role: {
+          stringValue: updates.role,
+        },
+        landlordId: {
+          stringValue: updates.landlordId,
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorDetails = await response.text();
+
+    console.error("Firestore profile update error:", errorDetails);
+
+    throw new Error("Could not update caretaker profile");
+  }
+
+  return response.json();
+}
