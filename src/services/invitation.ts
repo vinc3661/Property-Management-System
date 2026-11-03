@@ -1,35 +1,52 @@
+import { auth } from "./firebase";
+import { supabase } from "./supabase";
 
-import {auth} from "./firebase";
-import {supabase} from "./supabase";
+type InvitationResponse = {
+  message: string;
+  invitationUrl: string;
+  invitedEmail: string;
+  expiresAt: string;
+};
 
-export async function inviteCaretaker(email:string){
+export async function inviteCaretaker(
+  email: string
+): Promise<InvitationResponse> {
 
-const user=auth.currentUser;
-if(!user){
-    console.error("no signed in user");
+  const user = auth.currentUser;
+
+  if (!user) {
     throw new Error("No signed-in user");
-};
+  }
 
-const token=await user.getIdToken();
-if(!token){
-    console.error("no signed token");
-    throw new Error("no signed token");
-};
-const formData=new FormData();
-formData.append("email", email);
-const result=await supabase.admin<{
-    email:string,
+  const normalizedEmail = email.trim().toLowerCase();
 
-}>("create-caretaker-invitation", {
-    body:formData,
-});
+  if (!normalizedEmail) {
+    throw new Error("Caretaker email is required");
+  }
 
-if(result.error){
-    console.error("supabase function failed");
-    throw new Error("supabase function failed");
-}
-    
-return result.data;
+  
+  const firebaseIdToken = await user.getIdToken();
 
+  
+  const { data, error } =
+    await supabase.functions.invoke<InvitationResponse>(
+      "create-caretaker-invitation",
+      {
+        body: {
+          email: normalizedEmail,
+          firebaseIdToken,
+        },
+      }
+    );
 
+  if (error) {
+    console.error("Invitation function failed:", error);
+    throw error;
+  }
+
+  if (!data?.invitationUrl) {
+    throw new Error("Invitation URL was not returned");
+  }
+
+  return data;
 }
