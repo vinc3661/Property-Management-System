@@ -65,7 +65,7 @@ export default {
         const uid = payload.sub;
 
         
-        if (uid !== adminUid) {
+        if (adminUid !== payload.sub) {
           return Response.json(
             { error: "Unauthorized administrator account" },
             { status: 403, headers: corsHeaders }

@@ -13,7 +13,7 @@ import { PropertyCard } from "./components/PropertyCard";
 import { AuthCard } from "./components/AuthCard";
 import { UserProfileForm } from "./components/UserProfileForm";
 import { LandlordApplicationFlow } from "./components/Landlord-registration/LandlordApplicationFlow";
-
+import { getAdminApplications } from "./services/admin";
 import {
   addTenantToCloud,
   subscribeToTenants,
@@ -47,6 +47,18 @@ type LoginData = {
   password: string;
 };
 
+
+async function testAdminAccess() {
+  try {
+    const result = await getAdminApplications();
+  
+
+console.log("Admin access successful");
+console.log("Applications found:", result.applications.length);
+  } catch (error) {
+    console.error("Admin access failed:", error);
+  }
+}
 function App() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -319,7 +331,12 @@ console.log("user signed in");
             Role: {userProfile.role ?? "Awaiting role assignment"}
           </p>
         </header>
-
+<button
+  onClick={testAdminAccess}
+  className="mb-6 rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white shadow hover:bg-blue-700"
+>
+  Test Admin Access
+</button>
         
         <section className="mb-8 rounded-2xl bg-white p-6 shadow-md">
           <h2 className="mb-2 text-2xl font-bold">

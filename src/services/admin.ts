@@ -20,10 +20,16 @@ const {data,error}=await supabase.functions.invoke(
     body:formData,
 }
 );
+if (error) {
+  console.error("Admin request failed:", error);
 
-if(error){
-    console.error("failed to get admin applications:",error);
-throw error;
+  if (error.context instanceof Response) {
+    const responseBody = await error.context.clone().text();
+    console.error("Server response:", responseBody);
+    console.error("HTTP status:", error.context.status);
+  }
+
+  throw error;
 }
 return data;
 
