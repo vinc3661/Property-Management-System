@@ -80,6 +80,17 @@ export default {
 
     
         const payload = await verifyFirebaseToken(firebaseIdToken);
+        
+
+        if (payload.email_verified !== true) {
+  return Response.json(
+    { error: "Please verify your email before inviting caretakers" },
+    { status: 403, headers: corsHeaders }
+  );
+}
+        
+        
+        
         const landlordId = payload.sub;
 
         if (!landlordId) {
@@ -88,13 +99,6 @@ export default {
             { status: 401, headers: corsHeaders }
           );
         }
-
-        if (payload.email_verified !== true) {
-  return Response.json(
-    { error: "Please verify your email before inviting caretakers" },
-    { status: 403, headers: corsHeaders }
-  );
-}
         
         const profile = await getFirestoreProfile(landlordId);
 
