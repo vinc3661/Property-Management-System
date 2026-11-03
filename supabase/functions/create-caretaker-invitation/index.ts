@@ -89,6 +89,12 @@ export default {
           );
         }
 
+        if (payload.email_verified !== true) {
+  return Response.json(
+    { error: "Please verify your email before inviting caretakers" },
+    { status: 403, headers: corsHeaders }
+  );
+}
         
         const profile = await getFirestoreProfile(landlordId);
 
