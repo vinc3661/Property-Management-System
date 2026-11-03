@@ -273,7 +273,7 @@ export async function submitLandlordApplication(
   const formData=new FormData();
   formData.append("propertyName",propertyName);
   formData.append("file",ownershipDocument);
-  formData.append("propertyADress",propertyAddress);
+  formData.append("propertyAddress",propertyAddress);
   formData.append("firebaseIdToken",token ); 
 const {error,data}=await supabase.functions.invoke<{
   uid:string,

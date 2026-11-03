@@ -13,3 +13,7 @@ entrypoint = "./functions/admin-list-application/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/admin-list-application/*.html" ]
+[functions.admin-list-applications]
+verify_jwt = false
+[functions.property-ai]
+verify_jwt=false
