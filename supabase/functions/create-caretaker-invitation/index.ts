@@ -64,7 +64,7 @@ export default {
             ? body.firebaseIdToken
             : "";
 
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { 
           return Response.json(
             { error: "A valid caretaker email is required" },
             { status: 400, headers: corsHeaders }

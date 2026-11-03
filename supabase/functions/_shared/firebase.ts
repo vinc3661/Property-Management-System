@@ -102,17 +102,27 @@ export async function getFirestoreProfile(uid: string) {
   return response.json();
 }
 
+
 export async function updateFirestoreProfile(
   uid: string,
-  updates: {
-    role: "caretaker";
-    landlordId: string;
-  }
+  updates:
+    | {
+        role: "caretaker";
+        landlordId: string;
+      }
+    | {
+        role: "landlord";
+        landlordId: null;
+      }
 ) {
+  if (!uid || !/^[a-zA-Z0-9_-]+$/.test(uid)) {
+    throw new Error("Invalid Firebase user ID");
+  }
+
   const accessToken = await getFirestoreAccessToken();
 
   const url = new URL(
-    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/profiles/${uid}`
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/profiles/${encodeURIComponent(uid)}`
   );
 
   url.searchParams.append("updateMask.fieldPaths", "role");
@@ -126,8 +136,13 @@ export async function updateFirestoreProfile(
     },
     body: JSON.stringify({
       fields: {
-        role: { stringValue: updates.role },
-        landlordId: { stringValue: updates.landlordId },
+        role: {
+          stringValue: updates.role,
+        },
+        landlordId:
+          updates.landlordId === null
+            ? { nullValue: null }
+            : { stringValue: updates.landlordId },
       },
     }),
   });
@@ -135,7 +150,7 @@ export async function updateFirestoreProfile(
   if (!response.ok) {
     const details = await response.text();
     console.error("Firestore update error:", details);
-    throw new Error("Could not update caretaker profile");
+    throw new Error("Could not update user profile");
   }
 
   return response.json();
