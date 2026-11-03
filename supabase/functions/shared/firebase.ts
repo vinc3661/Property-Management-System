@@ -2,12 +2,7 @@
 import * as jose from "jsr:@panva/jose@6";
 
 const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
-
-const serviceAccountJson =
-  Deno.env.get("Firebase service account") ??
-  Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON") ??
-  Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
-
+const serviceceAccountJson=Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
 if (!projectId || !serviceAccountJson) {
   throw new Error("Firebase service account configuration is missing");
 }
