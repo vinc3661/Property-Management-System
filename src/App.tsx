@@ -35,6 +35,7 @@ import {
   SubscribeToAuthState,
   signInWithGoogle,
 } from "./services/auth";
+import { AdminDashboard } from "./components/AdminDashboard";
 
 type RegisterData = {
   email: string;
@@ -79,7 +80,13 @@ function App() {
         const isAdmin=
         Boolean(import.meta.env.VITE_ADMIN_UID)&&
         user?.uid===import.meta.env.VITE_ADMIN_UID;
-  
+console.log("ADMIN EMAIL:", user?.email);
+console.log("FIREBASE UID:", user?.uid);
+console.log("ENV ADMIN UID:", import.meta.env.VITE_ADMIN_UID);
+console.log(
+  "IS ADMIN:",
+  user?.uid === import.meta.env.VITE_ADMIN_UID
+);
   useEffect(() => {
     if (!landlordId) {
       setTenants([]);
@@ -286,21 +293,8 @@ function App() {
 }
 
 if (isAdmin) {
-  return (
-    <main className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-      <p>Welcome, Administrator.</p>
-
-      <button
-        onClick={testAdminAccess}
-        className="mt-6 rounded-lg bg-blue-600 px-5 py-3 text-white"
-      >
-        Test Admin Access
-      </button>
-    </main>
-  );
-}
-
+  return <AdminDashboard/>;
+};
   
   if (profileLoadError) {
     return (
@@ -393,12 +387,6 @@ if (isAdmin) {
           </p>
         </header>
 
-        <button
-          onClick={testAdminAccess}
-          className="mb-6 rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white shadow hover:bg-blue-700"
-        >
-          Test Admin Access
-        </button>
 
         <section className="mb-8 rounded-2xl bg-white p-6 shadow-md">
           <h2 className="mb-2 text-2xl font-bold">
