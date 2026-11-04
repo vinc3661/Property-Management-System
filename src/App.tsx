@@ -13,7 +13,9 @@ import { PropertyCard } from "./components/PropertyCard";
 import { AuthCard } from "./components/AuthCard";
 import { UserProfileForm } from "./components/UserProfileForm";
 import { LandlordApplicationFlow } from "./components/Landlord-registration/LandlordApplicationFlow";
+
 import { getAdminApplications } from "./services/admin";
+
 import {
   addTenantToCloud,
   subscribeToTenants,
@@ -25,7 +27,6 @@ import {
   updatePropertiesInCloud,
   getUserProfile,
   setUserProfile as saveProfileToFirestore,
-  
 } from "./services/firebase";
 
 import {
@@ -33,9 +34,7 @@ import {
   signUser,
   SubscribeToAuthState,
   signInWithGoogle,
-  
 } from "./services/auth";
-
 
 type RegisterData = {
   email: string;
@@ -47,18 +46,17 @@ type LoginData = {
   password: string;
 };
 
-
 async function testAdminAccess() {
   try {
     const result = await getAdminApplications();
-  
 
-console.log("Admin access successful");
-console.log("Applications found:", result.applications.length);
+    console.log("Admin access successful");
+    console.log("Applications found:", result.applications.length);
   } catch (error) {
     console.error("Admin access failed:", error);
   }
 }
+
 function App() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -69,6 +67,7 @@ function App() {
 
   const [authLoading, setAuthLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [profileLoadError, setProfileLoadError] = useState(false);
 
   const landlordId =
     userProfile?.role === "landlord"
@@ -77,6 +76,7 @@ function App() {
         ? userProfile.landlordId
         : null;
 
+  
   useEffect(() => {
     if (!landlordId) {
       setTenants([]);
@@ -95,6 +95,7 @@ function App() {
     return unsubscribe;
   }, [landlordId]);
 
+  
   useEffect(() => {
     if (!landlordId) {
       setProperties([]);
@@ -113,11 +114,13 @@ function App() {
     return unsubscribe;
   }, [landlordId]);
 
+  
   useEffect(() => {
     const unsubscribe = SubscribeToAuthState(async (firebaseUser) => {
       setUser(firebaseUser);
       setAuthLoading(true);
       setUserProfileState(null);
+      setProfileLoadError(false);
 
       try {
         if (firebaseUser) {
@@ -126,6 +129,7 @@ function App() {
         }
       } catch (error) {
         console.error("Failed to load user profile:", error);
+        setProfileLoadError(true);
       } finally {
         setAuthLoading(false);
       }
@@ -150,17 +154,16 @@ function App() {
     }
   };
 
-  const handleGoogleSignIn=async () =>{
-try{
-await signInWithGoogle();
-console.log("user signed in");
-
-}catch(error){
-  console.error("sign in with Google failed");
-
-}
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      console.log("User signed in");
+    } catch (error) {
+      console.error("Sign in with Google failed:", error);
+    }
   };
 
+  
   const handleSaveUserProfile = async (
     data: Pick<UserProfile, "email" | "name">
   ) => {
@@ -178,10 +181,11 @@ console.log("user signed in");
         name: data.name,
         role: null,
         landlordId: null,
-        phoneNumber:null,
+        phoneNumber: null,
       };
 
       await saveProfileToFirestore(user.uid, profile);
+
       setUserProfileState(profile);
 
       console.log("User profile saved successfully.");
@@ -260,8 +264,7 @@ console.log("user signed in");
     }
   };
 
-
-
+  
   if (authLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
@@ -270,47 +273,88 @@ console.log("user signed in");
     );
   }
 
+  
   if (!user) {
     return (
       <AuthCard
         onSignUser={handleSignUser}
         onRegister={handleRegisterUser}
         onGoogleSignIn={handleGoogleSignIn}
-        
-        
       />
     );
   }
 
+  // 3. Handle profile loading errors separately from missing profiles.
+  if (profileLoadError) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
+        <h1 className="text-xl font-bold">
+          Unable to load your profile
+        </h1>
+
+        <p className="text-center text-gray-600">
+          Something went wrong while retrieving your account information.
+          Please try refreshing the page.
+        </p>
+
+        <button
+          onClick={() => window.location.reload()}
+          className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
+        >
+          Retry
+        </button>
+      </main>
+    );
+  }
+
+  
   if (!userProfile) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-        <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
-          <h1 className="mb-2 text-2xl font-bold">
-            Complete your profile
-          </h1>
-
-          <p className="mb-6 text-gray-600">
-            Enter your name and email to finish setting up your account.
-          </p>
-
+        <div className="w-full max-w-md">
           <UserProfileForm
             onRegisterUserProfile={handleSaveUserProfile}
             initialEmail={user.email ?? ""}
             initialName={user.displayName ?? ""}
-
           />
 
           {profileSaving && (
-            <p className="mt-4 text-sm text-gray-500">
+            <p className="mt-4 text-center text-gray-600">
               Saving your profile...
             </p>
           )}
+        </div>
+      </main>
+    );
+  }
+
+  // 5. Block users who have not received an approved workspace role.
+  if (
+    userProfile.role !== "landlord" &&
+    userProfile.role !== "caretaker"
+  ) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+        <section className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-lg">
+          <h1 className="mb-3 text-2xl font-bold">
+            Account awaiting approval
+          </h1>
+
+          <p className="text-gray-600">
+            Your profile has been created successfully.
+            However, you need landlord approval before accessing
+            the property management workspace.
+          </p>
+
+          <div className="mt-6">
+            <LandlordApplicationFlow />
+          </div>
         </section>
       </main>
     );
   }
 
+  // 6. Approved landlord/caretaker workspace.
   return (
     <main className="min-h-screen bg-gray-100 p-4 md:p-8">
       <div className="mx-auto max-w-7xl">
@@ -331,13 +375,14 @@ console.log("user signed in");
             Role: {userProfile.role ?? "Awaiting role assignment"}
           </p>
         </header>
-<button
-  onClick={testAdminAccess}
-  className="mb-6 rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white shadow hover:bg-blue-700"
->
-  Test Admin Access
-</button>
-        
+
+        <button
+          onClick={testAdminAccess}
+          className="mb-6 rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white shadow hover:bg-blue-700"
+        >
+          Test Admin Access
+        </button>
+
         <section className="mb-8 rounded-2xl bg-white p-6 shadow-md">
           <h2 className="mb-2 text-2xl font-bold">
             Apply for landlord access
@@ -350,7 +395,6 @@ console.log("user signed in");
           <LandlordApplicationFlow />
         </section>
 
-        
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <section className="rounded-2xl bg-white p-6 shadow-md">
             <h2 className="mb-2 text-2xl font-bold">

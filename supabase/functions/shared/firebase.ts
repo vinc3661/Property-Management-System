@@ -7,7 +7,7 @@ if (!projectId || !serviceAccountJson) {
   throw new Error("Firebase service account configuration is missing");
 }
 
-const serviceAccount = JSON.parse(serviceAccountJson);
+const serviceAccountJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
 
 const privateKey = await jose.importPKCS8(
   serviceAccount.private_key,
