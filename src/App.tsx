@@ -76,6 +76,9 @@ function App() {
         ? userProfile.landlordId
         : null;
 
+        const isAdmin=
+        Boolean(import.meta.env.VITE_ADMIN_UID)&&
+        user?.uid===import.meta.env.VITE_ADMIN_UID;
   
   useEffect(() => {
     if (!landlordId) {
@@ -272,19 +275,33 @@ function App() {
       </main>
     );
   }
+  if (!user) {
+  return (
+    <AuthCard
+      onSignUser={handleSignUser}
+      onRegister={handleRegisterUser}
+      onGoogleSignIn={handleGoogleSignIn}
+    />
+  );
+}
+
+if (isAdmin) {
+  return (
+    <main className="min-h-screen bg-gray-100 p-8">
+      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+      <p>Welcome, Administrator.</p>
+
+      <button
+        onClick={testAdminAccess}
+        className="mt-6 rounded-lg bg-blue-600 px-5 py-3 text-white"
+      >
+        Test Admin Access
+      </button>
+    </main>
+  );
+}
 
   
-  if (!user) {
-    return (
-      <AuthCard
-        onSignUser={handleSignUser}
-        onRegister={handleRegisterUser}
-        onGoogleSignIn={handleGoogleSignIn}
-      />
-    );
-  }
-
-  // 3. Handle profile loading errors separately from missing profiles.
   if (profileLoadError) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
@@ -328,7 +345,7 @@ function App() {
     );
   }
 
-  // 5. Block users who have not received an approved workspace role.
+  
   if (
     userProfile.role !== "landlord" &&
     userProfile.role !== "caretaker"
@@ -354,7 +371,7 @@ function App() {
     );
   }
 
-  // 6. Approved landlord/caretaker workspace.
+  
   return (
     <main className="min-h-screen bg-gray-100 p-4 md:p-8">
       <div className="mx-auto max-w-7xl">

@@ -8,7 +8,7 @@ import {
   updateFirestoreProfile,
 } from "../_shared/firebase.ts";
 
-// CORS configuration
+
 const allowedOrigins = new Set([
   "http://localhost:5173",
 ]);
@@ -79,7 +79,7 @@ export default {
 
       try {
 
-        // 1. Read request body
+        
         const body = await req.json();
 
         const rawToken =
@@ -169,7 +169,7 @@ export default {
           );
         }
 
-        // 4. Validate invitation status
+        
         if (
           invitation.status !== "pending" &&
           invitation.status !== "processing"
@@ -193,7 +193,7 @@ export default {
           );
         }
 
-        // 5. Verify invited email
+        
         if (
           caretakerEmail !==
           invitation.invited_email.trim().toLowerCase()
@@ -247,7 +247,7 @@ export default {
 
         if (existingRole === "caretaker") {
 
-          /
+          
           if (
             existingLandlordId === invitation.landlord_id &&
             invitation.status === "processing"
