@@ -24,7 +24,7 @@ const firebaseJwks = jose.createRemoteJWKSet(
   )
 );
 
-// Verify Firebase authentication tokens
+
 export async function verifyFirebaseToken(token: string) {
   const { payload } = await jose.jwtVerify(
     token,
