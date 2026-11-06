@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getAdminApplications,
   approveApplication,
-} from "./services/admin.ts";
+} from "../services/admin.ts";
 
 type AdminApplication = {
   id: string;
@@ -51,6 +52,9 @@ export function AdminDashboard() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
+  
+  const approvalInProgressRef = useRef(false);
+
   const loadApplications = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -79,12 +83,26 @@ export function AdminDashboard() {
     void loadApplications();
   }, [loadApplications]);
 
+  const canApprove = (status: string) =>
+    ["pending", "under_review", "needs_information"].includes(status);
+
   const handleApprove = async (application: AdminApplication) => {
+    
+    if (approvalInProgressRef.current) return;
+
+    
+    if (!canApprove(application.status)) return;
+
     const confirmed = window.confirm(
-      `Are you sure you want to approve ${application.propertyName || "this application"}?`
+      `Are you sure you want to approve ${
+        application.propertyName || "this application"
+      }?`
     );
 
     if (!confirmed) return;
+
+    // Lock immediately, before React re-renders.
+    approvalInProgressRef.current = true;
 
     setApprovingId(application.id);
     setActionError(null);
@@ -107,6 +125,7 @@ export function AdminDashboard() {
           : "Could not approve this application. Please try again."
       );
     } finally {
+      approvalInProgressRef.current = false;
       setApprovingId(null);
     }
   };
@@ -134,9 +153,6 @@ export function AdminDashboard() {
   const pendingCount = applications.filter(
     (application) => application.status === "pending"
   ).length;
-
-  const canApprove = (status: string) =>
-    ["pending", "under_review", "needs_information"].includes(status);
 
   return (
     <main className="min-h-screen bg-gray-100 p-4 md:p-8">
