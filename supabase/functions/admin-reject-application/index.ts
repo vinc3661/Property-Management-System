@@ -60,7 +60,17 @@ export default {
           { status: 400, headers: corsHeaders },
         );
       }
+const rejectionReason = reason.trim();
 
+if (
+  rejectionReason.length < 10 ||
+  rejectionReason.length > 500
+) {
+  return Response.json(
+    { error: "Rejection reason must be between 10 and 500 characters" },
+    { status: 400, headers: corsHeaders },
+  );
+}
       
       const payload = await verifyFirebaseToken(firebaseIdToken);
 
@@ -158,5 +168,112 @@ export default {
         { status: 500, headers: corsHeaders },
       );
     }
+
+
+const profileResponse=await fetch(
+  `${firestoreBase}/applicants/${encodeURIComponent(applicationId)}`,{
+method:GET,
+headers:{
+  Authorization:`Bearer ${accessToken}`
+},
+}
+);
+
+if(profileResponse.status===404){
+  return Response.json(
+    {error:"profile not found"},
+    {status:404,corseHeaders},
+  );
+}
+
+if(!profileResponse.ok){
+  return Response.json(
+    {error:"profile not found"},
+    {status:404,headers:corseHeaders},
+);
+}
+const profile=await profileResponse.json();
+const status=profile?.fields?.status?.stringValue|| null;
+
+if(status===null){
+  return Response.json(
+    {error:"profile status not found"},
+    {status:404,headers:corseHeaders},
+  );
+}
+const commitResponse = await fetch(
+  `${firestoreBase}:commit`,
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      writes: [
+        {
+          update: {
+            name: application.name,
+            fields: {
+              status: {
+                stringValue: "rejected",
+              },
+              rejectionReason: {
+                stringValue: reason.trim(),
+              },
+              rejectedBy: {
+                stringValue: payload.sub,
+              },
+              rejectedAt: {
+                timestampValue: new Date().toISOString(),
+              },
+            },
+          },
+          updateMask: {
+            fieldPaths: [
+              "status",
+              "rejectionReason",
+              "rejectedBy",
+              "rejectedAt",
+            ],
+          },
+          currentDocument: {
+            updateTime: application.updateTime,
+          },
+        },
+      ],
+    }),
+  },
+);
+
+if (!commitResponse.ok) {
+  const errorDetails = await commitResponse.text();
+
+  console.error("Firestore commit failed:", errorDetails);
+
+  if (
+    commitResponse.status === 409 ||
+    commitResponse.status === 400
+  ) {
+    return Response.json(
+      { error: "Application changed. Refresh and try again." },
+      { status: 409, headers: corsHeaders },
+    );
+  }
+
+  throw new Error("Could not reject application");
+}
+
+return Response.json(
+  {
+    success: true,
+    message: "Application rejected successfully",
+    applicantId,
+    applicationId,
+  },
+  { status: 200, headers: corsHeaders },
+);
+
+
   }),
 };
