@@ -74,3 +74,42 @@ export async function approveApplication(applicationId: string) {
 
   return data;
 }
+
+
+export async function rejectApplication(applicationId:string){
+
+    const user=auth.currentUser;
+if(!user){
+    console.error("no signed user");
+    throw error;
+};
+    const token=await getTokenId();
+
+    if(!token){
+        console.error("invalid token");
+        throw error;
+    };
+
+const {error,data}=await supabaseAdmin.functions(
+    "admin-reject-application",
+    {
+body:{
+    firebaseIdToken:token,
+    applicationId,
+}
+}
+);
+if(error){
+    console.error("failed to invoke function");
+    throw error;
+}
+
+return data;
+
+};
+
+
+
+
+
+
