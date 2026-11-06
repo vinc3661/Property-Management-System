@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { getAdminApplications } from "../services/admin";
+import {
+  getAdminApplications,
+  approveApplication,
+} from "./services/admin.ts";
 
 type AdminApplication = {
   id: string;
@@ -44,6 +47,10 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
   const loadApplications = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -72,6 +79,38 @@ export function AdminDashboard() {
     void loadApplications();
   }, [loadApplications]);
 
+  const handleApprove = async (application: AdminApplication) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to approve ${application.propertyName || "this application"}?`
+    );
+
+    if (!confirmed) return;
+
+    setApprovingId(application.id);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      await approveApplication(application.id);
+
+      setActionSuccess(
+        `${application.propertyName || "Application"} was approved successfully.`
+      );
+
+      await loadApplications();
+    } catch (err) {
+      console.error("Approval action failed:", err);
+
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : "Could not approve this application. Please try again."
+      );
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
   const formatDate = (date: string | null) => {
     if (!date) return "Date unavailable";
 
@@ -96,6 +135,9 @@ export function AdminDashboard() {
     (application) => application.status === "pending"
   ).length;
 
+  const canApprove = (status: string) =>
+    ["pending", "under_review", "needs_information"].includes(status);
+
   return (
     <main className="min-h-screen bg-gray-100 p-4 md:p-8">
       <div className="mx-auto max-w-7xl">
@@ -117,12 +159,30 @@ export function AdminDashboard() {
           <button
             type="button"
             onClick={() => void loadApplications()}
-            disabled={loading}
+            disabled={loading || approvingId !== null}
             className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Refreshing..." : "Refresh applications"}
           </button>
         </header>
+
+        {actionSuccess && (
+          <div
+            role="status"
+            className="mb-5 rounded-lg bg-green-50 p-4 text-green-800"
+          >
+            {actionSuccess}
+          </div>
+        )}
+
+        {actionError && (
+          <div
+            role="alert"
+            className="mb-5 rounded-lg bg-red-50 p-4 text-red-700"
+          >
+            {actionError}
+          </div>
+        )}
 
         <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-xl bg-white p-6 shadow-sm">
@@ -245,7 +305,7 @@ export function AdminDashboard() {
                     </p>
                   </div>
 
-                  <div className="mt-5 border-t border-gray-100 pt-4">
+                  <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
                     {application.documentUrl ? (
                       <a
                         href={application.documentUrl}
@@ -260,6 +320,19 @@ export function AdminDashboard() {
                         Document link is unavailable. Refresh the applications
                         and try again.
                       </p>
+                    )}
+
+                    {canApprove(application.status) && (
+                      <button
+                        type="button"
+                        onClick={() => void handleApprove(application)}
+                        disabled={approvingId !== null}
+                        className="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {approvingId === application.id
+                          ? "Approving..."
+                          : "Approve application"}
+                      </button>
                     )}
                   </div>
                 </article>
