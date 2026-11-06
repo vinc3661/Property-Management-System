@@ -32,5 +32,58 @@ if (error) {
   throw error;
 }
 return data;
+};
 
+  
+export async function approveApplication(applicationId: string) {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("You must be signed in");
+  }
+
+  const token = await user.getIdToken();
+
+  const { data, error } = await supabase.functions.invoke(
+    "admin-approve-application",
+    {
+      body: {
+        firebaseIdToken: token,
+        applicationId,
+      },
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+
+};
+
+export async function approveApplication(applicationId: string) {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("You must be signed in");
+  }
+
+  const token = await user.getIdToken();
+
+  const { data, error } = await supabase.functions.invoke(
+    "admin-approve-application",
+    {
+      body: {
+        firebaseIdToken: token,
+        applicationId,
+      },
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 }
