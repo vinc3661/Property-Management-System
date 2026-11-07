@@ -1,11 +1,13 @@
 
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
+
 import {
   verifyFirebaseToken,
   getFirestoreProfile,
 } from "../_shared/firebase.ts";
-import {createRateLimiter} from "../_shared/rateLimit.ts";
+
+import { createRateLimiter } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "http://localhost:5173",
@@ -19,6 +21,13 @@ const appUrl = (
 ).replace(/\/$/, "");
 
 const INVITATION_EXPIRY_HOURS = 48;
+
+
+const applicationLimiter = createRateLimiter({
+  limit: 5,
+  window: "1 h",
+  prefix: "pms:create-caretaker-invitation",
+});
 
 function generateSecureToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -37,12 +46,6 @@ async function hashToken(token: string): Promise<string> {
     .join("");
 }
 
-const applicationLimiter=createRataLimiter({
-  limit:5,
-  window:"1 h",
-  prefix:"create-caretaker-invitation",
-});
-
 export default {
   fetch: withSupabase(
     { auth: ["publishable"] },
@@ -58,9 +61,9 @@ export default {
         );
       }
 
-
-         try {
+      try {
         const body = await req.body();
+
         const email =
           typeof body.email === "string"
             ? body.email.trim().toLowerCase()
@@ -71,7 +74,7 @@ export default {
             ? body.firebaseIdToken
             : "";
 
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { 
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           return Response.json(
             { error: "A valid caretaker email is required" },
             { status: 400, headers: corsHeaders }
@@ -85,27 +88,25 @@ export default {
           );
         }
 
-    
-        const payload = await verifyFirebaseToken(firebaseIdToken);
         
+        const payload = await verifyFirebaseToken(firebaseIdToken);
 
         if (payload.email_verified !== true) {
-  return Response.json(
-    { error: "Please verify your email before inviting caretakers" },
-    { status: 403, headers: corsHeaders }
-  );
-}
-        
-        
-        
+          return Response.json(
+            { error: "Please verify your email before inviting caretakers" },
+            { status: 403, headers: corsHeaders }
+          );
+        }
+
         const landlordId = payload.sub;
 
-        if (!landlordId) {
+        if (typeof landlordId !== "string" || !landlordId) {
           return Response.json(
             { error: "Could not identify the signed-in user" },
             { status: 401, headers: corsHeaders }
           );
         }
+
         
         const profile = await getFirestoreProfile(landlordId);
 
@@ -119,9 +120,54 @@ export default {
         }
 
         
+        let rateLimitResult;
+
+        try {
+          rateLimitResult = await applicationLimiter.limit(landlordId);
+        } catch (error) {
+          console.error(
+            "Rate limiter unavailable:",
+            error instanceof Error ? error.message : "Unknown error"
+          );
+
+          return Response.json(
+            {
+              error:
+                "Rate-limiting service temporarily unavailable. Please try again later.",
+            },
+            {
+              status: 503,
+              headers: corsHeaders,
+            }
+          );
+        }
+
+        if (!rateLimitResult.success) {
+          const retryAfter = Math.max(
+            1,
+            Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
+          );
+
+          return Response.json(
+            {
+              error: "Too many invitation requests. Please try again later.",
+              retryAfter,
+            },
+            {
+              status: 429,
+              headers: {
+                ...corsHeaders,
+                "Retry-After": String(retryAfter),
+              },
+            }
+          );
+        }
+
+        
         const rawToken = generateSecureToken();
         const tokenHash = await hashToken(rawToken);
 
+      
         const expiresAt = new Date(
           Date.now() + INVITATION_EXPIRY_HOURS * 60 * 60 * 1000
         ).toISOString();
@@ -146,9 +192,8 @@ export default {
           );
         }
 
-      
-        const invitationUrl =
-          `${appUrl}/invite/${rawToken}`;
+        
+        const invitationUrl = `${appUrl}/invite/${rawToken}`;
 
         return Response.json(
           {
@@ -159,7 +204,6 @@ export default {
           },
           { status: 201, headers: corsHeaders }
         );
-
       } catch (error) {
         console.error("Create invitation error:", error);
 
@@ -167,50 +211,6 @@ export default {
           { error: "Unable to create caretaker invitation" },
           { status: 500, headers: corsHeaders }
         );
-
-       let rateLimitResult;
-       try{
-       rateLimitResult=await applicationRateLimiter.limit(uid);
-       if(error){
-        console.error("Rate limit unavailable":,
-          error instanceof Error? error.message:"unknown error"
-        );
-       }
-
-
-          return Response.json(
-            {
-              error: "Rate-limiting service temporarily unavailable. Please try again later.",
-            },
-            {
-              status: 503,
-              headers: corsHeaders,
-            }
-          );
-
-          if(!rateLimitResult.success){
-          const retryAfter=Math.max(1,
-            Math.ceil((ratelimitResult.reset-Date.now())/1000)
-          );
-            
-        }
-return Response.json(
-  {error:"too many request requests.please try again later",
-    retryAfter
-  },
-  {status:429,
-    headers:{
-      ...corseHeaders,
-      "Retry-After":string(retryAfter),
-    }
-  }
-)
-
-
-       }
-
-
-
       }
     }
   ),
