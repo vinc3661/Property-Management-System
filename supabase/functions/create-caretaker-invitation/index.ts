@@ -5,6 +5,7 @@ import {
   verifyFirebaseToken,
   getFirestoreProfile,
 } from "../_shared/firebase.ts";
+import {createRateLimiter} from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "http://localhost:5173",
@@ -36,6 +37,12 @@ async function hashToken(token: string): Promise<string> {
     .join("");
 }
 
+const applicationLimiter=createRataLimiter({
+  limit:5,
+  window:"1 h",
+  prefix:"create-caretaker-invitation",
+});
+
 export default {
   fetch: withSupabase(
     { auth: ["publishable"] },
@@ -51,9 +58,9 @@ export default {
         );
       }
 
-      try {
-        const body = await req.json();
 
+         try {
+        const body = await req.body();
         const email =
           typeof body.email === "string"
             ? body.email.trim().toLowerCase()
@@ -160,6 +167,50 @@ export default {
           { error: "Unable to create caretaker invitation" },
           { status: 500, headers: corsHeaders }
         );
+
+       let rateLimitResult;
+       try{
+       rateLimitResult=await applicationRateLimiter.limit(uid);
+       if(error){
+        console.error("Rate limit unavailable":,
+          error instanceof Error? error.message:"unknown error"
+        );
+       }
+
+
+          return Response.json(
+            {
+              error: "Rate-limiting service temporarily unavailable. Please try again later.",
+            },
+            {
+              status: 503,
+              headers: corsHeaders,
+            }
+          );
+
+          if(!rateLimitResult.success){
+          const retryAfter=Math.max(1,
+            Math.ceil((ratelimitResult.reset-Date.now())/1000)
+          );
+            
+        }
+return Response.json(
+  {error:"too many request requests.please try again later",
+    retryAfter
+  },
+  {status:429,
+    headers:{
+      ...corseHeaders,
+      "Retry-After":string(retryAfter),
+    }
+  }
+)
+
+
+       }
+
+
+
       }
     }
   ),
