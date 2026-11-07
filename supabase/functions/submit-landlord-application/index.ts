@@ -2,7 +2,8 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 import * as jose from "jsr:@panva/jose@6";
-import {createLandlordLimiter} from "./_shared/rateLimit.ts";
+import { createRateLimiter } from "../_shared/rateLimit.ts";
+
 const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
 
 const bucketName =
@@ -19,7 +20,6 @@ const allowedTypes: Record<string, string> = {
   "image/png": "png",
 };
 
-
 const allowedOrigins = new Set([
   "http://localhost:5173",
 ]);
@@ -34,6 +34,7 @@ if (appUrl) {
 
 function getCorsHeaders(req: Request): HeadersInit {
   const origin = req.headers.get("origin");
+
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers":
@@ -48,7 +49,6 @@ function getCorsHeaders(req: Request): HeadersInit {
 
   return headers;
 }
-
 
 function hasValidSignature(
   bytes: Uint8Array,
@@ -87,13 +87,12 @@ const publicJwks = jose.createRemoteJWKSet(
   )
 );
 
-const applicationLimiter=createRateLimiter(
-  {
-limit:3,
-window:"1 h",
-prefix:"pms:landlord-application",
 
-  });
+const applicationLimiter = createRateLimiter({
+  limit: 3,
+  window: "1 h",
+  prefix: "pms:landlord-application",
+});
 
 export default {
   fetch: withSupabase(
@@ -147,7 +146,7 @@ export default {
           );
         }
 
-        
+      
         const { payload } = await jose.jwtVerify(
           token,
           publicJwks,
@@ -173,10 +172,58 @@ export default {
         
         if (payload.email_verified !== true) {
           return Response.json(
-            { error: "Please verify your email before submitting documents" },
+            {
+              error: "Please verify your email before submitting documents",
+            },
             {
               status: 403,
               headers: corsHeaders,
+            }
+          );
+        }
+
+      
+        let rateLimitResult;
+
+        try {
+          rateLimitResult = await applicationLimiter.limit(uid);
+        } catch (error) {
+          console.error(
+            "Rate limiter unavailable:",
+            error instanceof Error ? error.message : "Unknown error"
+          );
+
+          return Response.json(
+            {
+              error: "Rate-limiting service temporarily unavailable. Please try again later.",
+            },
+            {
+              status: 503,
+              headers: corsHeaders,
+            }
+          );
+        }
+
+        
+        if (!rateLimitResult.success) {
+          const retryAfter = Math.max(
+            1,
+            Math.ceil(
+              (rateLimitResult.reset - Date.now()) / 1000
+            )
+          );
+
+          return Response.json(
+            {
+              error: "Too many application submissions. Please try again later.",
+              retryAfter,
+            },
+            {
+              status: 429,
+              headers: {
+                ...corsHeaders,
+                "Retry-After": String(retryAfter),
+              },
             }
           );
         }
@@ -186,7 +233,9 @@ export default {
 
         if (!(file instanceof File)) {
           return Response.json(
-            { error: "Please provide a file using the 'file' field" },
+            {
+              error: "Please provide a file using the 'file' field",
+            },
             {
               status: 400,
               headers: corsHeaders,
@@ -220,7 +269,6 @@ export default {
           );
         }
 
-      
         const fileBytes = new Uint8Array(
           await file.arrayBuffer()
         );
@@ -256,7 +304,9 @@ export default {
           );
 
           return Response.json(
-            { error: "Failed to upload ownership document" },
+            {
+              error: "Failed to upload ownership document",
+            },
             {
               status: 500,
               headers: corsHeaders,
@@ -283,7 +333,9 @@ export default {
           error instanceof jose.errors.JWSSignatureVerificationFailed
         ) {
           return Response.json(
-            { error: "Invalid or expired Firebase ID token" },
+            {
+              error: "Invalid or expired Firebase ID token",
+            },
             {
               status: 401,
               headers: corsHeaders,
@@ -297,7 +349,9 @@ export default {
         );
 
         return Response.json(
-          { error: "Unable to process ownership document request" },
+          {
+            error: "Unable to process ownership document request",
+          },
           {
             status: 500,
             headers: corsHeaders,
