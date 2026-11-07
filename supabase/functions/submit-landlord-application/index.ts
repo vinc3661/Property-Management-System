@@ -2,7 +2,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 import * as jose from "jsr:@panva/jose@6";
-
+import {createLandlordLimiter} from "./_shared/rateLimit.ts";
 const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
 
 const bucketName =
@@ -86,6 +86,14 @@ const publicJwks = jose.createRemoteJWKSet(
     "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
   )
 );
+
+const applicationLimiter=createRateLimiter(
+  {
+limit:3,
+window:"1 h",
+prefix:"pms:landlord-application",
+
+  });
 
 export default {
   fetch: withSupabase(

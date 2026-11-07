@@ -23,10 +23,8 @@ return createLimiter({
     limiter:RateLimiter.slidingWindows(limit,windows);
     prefix,
     analytics:false,
-}
-
-)
+});
 
 
 
-}
+};
