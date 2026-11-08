@@ -10,7 +10,6 @@ import {
   type User,
 } from "firebase/auth";
 
-
 import {auth} from "./firebase";
 export async function registerUser(email:string,password:string):Promise<void>{
     try{

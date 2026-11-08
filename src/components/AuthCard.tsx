@@ -9,7 +9,10 @@ import {
 } from "firebase/auth";
 
 import { auth } from "../services/firebase";
-import { signWithNumber } from "../services/auth";
+import {
+  signWithNumber,
+  verifyPhoneCode,
+} from "../services/auth";
 
 type LoginData = {
   email: string;
@@ -52,11 +55,11 @@ export function AuthCard({
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [phoneError, setPhoneError] = useState("");
 
-  // reCAPTCHA references
+  
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
-  // Initialize Firebase reCAPTCHA
+  
   useEffect(() => {
     const container = recaptchaContainerRef.current;
 
@@ -113,30 +116,28 @@ export function AuthCard({
       setPhoneLoading(false);
     }
   };
+const handleVerifyCode = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
 
-  
-  const handleVerifyCode = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  if (!confirmationResult) return;
 
-    if (!confirmationResult) return;
+  if (!/^\d{6}$/.test(verificationCode)) {
+    setPhoneError("Please enter the 6-digit verification code.");
+    return;
+  }
 
-    setPhoneError("");
-    setPhoneLoading(true);
+  setPhoneError("");
+  setPhoneLoading(true);
 
-    try {
-      await confirmationResult.confirm(verificationCode);
-
-      
-      
-    } catch (error) {
-      console.error("OTP verification failed:", error);
-      setPhoneError(
-        "Invalid verification code. Please try again."
-      );
-    } finally {
-      setPhoneLoading(false);
-    }
-  };
+  try {
+    await verifyPhoneCode(confirmationResult, verificationCode);
+  } catch (error) {
+    console.error("OTP verification failed:", error);
+    setPhoneError("Invalid verification code. Please try again.");
+  } finally {
+    setPhoneLoading(false);
+  }
+};
 
   
   const handleLogin = (e: FormEvent<HTMLFormElement>) => {
