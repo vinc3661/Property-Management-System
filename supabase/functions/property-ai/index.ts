@@ -1,8 +1,8 @@
-
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 import * as jose from "jsr:@panva/jose@6";
-import {createRateLimit} from"./_shared/rateLimit.ts"
+import { createRateLimiter } from "../_shared/rateLimit.ts";
+
 const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
 
 const publicJwks = jose.createRemoteJWKSet(
@@ -11,13 +11,12 @@ const publicJwks = jose.createRemoteJWKSet(
   ),
 );
 
-const applicationRateLimit=await createRateLimit(
-  {
-    limit:10,
-    windows:"10 h",
-    prefix:"property-ai"
-  }
-);
+
+const applicationRateLimit = createRateLimiter({
+  limit: 10,
+  window: "10 h",
+  prefix: "pms:property-ai",
+});
 
 async function getGoogleAccessToken(
   serviceAccountJson: string,
@@ -71,8 +70,6 @@ async function getGoogleAccessToken(
   return result.access_token;
 }
 
-
-
 async function getFirestoreDocument(
   accessToken: string,
   documentPath: string,
@@ -112,50 +109,6 @@ async function getFirestoreDocument(
   return await response.json();
 }
 
-try{
-
-resultRateLimit=await applicationRateLimit.limit(uid);
-if(error){
-  console.error("rate limit unavailable:",
-    error instanceof ? error.message:"unknown error"
-  );
-}
-
-          return Response.json(
-            {
-              error:
-                "Rate-limiting service temporarily unavailable. Please try again later.",
-            },
-            {
-              status: 503,
-              headers: corsHeaders,
-            }
-          );
-}
-
-if(!resultRateLimit.success){
-  const retryAfter=Math.max(
-  1,
-Math.ceil(resultRateLimit.rest-Date now ())/1000);
-
-
-return Response.json(
-  {error:"exeeded Ai assitant reques try again later",retryAfter},
-  {status:429,
-  headers:{
-    ...corseHeaders,
-    "RetryAfter":string(RetryAfter)
-
-  },
-},
-);
-
-}
-
-
-
-
-
 type FirestoreValue = {
   stringValue?: string;
   integerValue?: string;
@@ -170,8 +123,6 @@ type FirestoreValue = {
     fields?: Record<string, FirestoreValue>;
   };
 };
-
-
 
 function decodeFirestoreValue(value: FirestoreValue): unknown {
   if ("stringValue" in value) {
@@ -229,8 +180,6 @@ function decodeFirestoreFields(
     ]),
   );
 }
-
-
 
 async function getFirestoreCollection(
   accessToken: string,
@@ -320,8 +269,6 @@ async function getFirestoreCollection(
     });
 }
 
-
-
 export default {
   fetch: withSupabase(
     { auth: ["publishable"] },
@@ -339,8 +286,6 @@ export default {
           { status: 405, headers: { Allow: "POST" } },
         );
       }
-
-      
 
       let requestBody: unknown;
 
@@ -375,7 +320,7 @@ export default {
         );
       }
 
-      // 8. Read required secrets
+      
 
       const serviceAccountJson = Deno.env.get(
         "FIREBASE_SERVICE_ACCOUNT_JSON",
@@ -391,8 +336,6 @@ export default {
           { status: 500 },
         );
       }
-
-      
 
       const token = req.headers.get("x-firebase-id-token");
 
@@ -432,8 +375,6 @@ export default {
           { status: 401 },
         );
       }
-
-      
 
       try {
         const googleAccessToken = await getGoogleAccessToken(
@@ -477,8 +418,6 @@ export default {
             );
           }
 
-          
-
           const landlordDocument = await getFirestoreDocument(
             googleAccessToken,
             `profiles/${assignedLandlordId}`,
@@ -514,7 +453,63 @@ export default {
           );
         }
 
-      
+
+        let rateLimitResult: Awaited<
+          ReturnType<typeof applicationRateLimit.limit>
+        >;
+
+        try {
+          rateLimitResult = await applicationRateLimit.limit(uid);
+        } catch (error) {
+          console.error(
+            "AI rate limiter unavailable:",
+            error instanceof Error ? error.message : "Unknown error",
+          );
+
+          return Response.json(
+            {
+              error: "AI service temporarily unavailable. Please try again later.",
+            },
+            { status: 503 },
+          );
+        }
+
+        
+        if (rateLimitResult.reason === "timeout") {
+          console.error("AI rate limiter timed out");
+
+          return Response.json(
+            {
+              error: "AI service temporarily unavailable. Please try again later.",
+            },
+            { status: 503 },
+          );
+        }
+
+        
+        if (!rateLimitResult.success) {
+          const retryAfter = Math.max(
+            1,
+            Math.ceil(
+              (rateLimitResult.reset - Date.now()) / 1000,
+            ),
+          );
+
+          return Response.json(
+            {
+              error: "You've exceeded your AI assistant request limit. Please try again later.",
+              retryAfter,
+            },
+            {
+              status: 429,
+              headers: {
+                "Retry-After": String(retryAfter),
+              },
+            },
+          );
+        }
+
+        
 
         const [tenants, properties] = await Promise.all([
           getFirestoreCollection(
@@ -529,14 +524,12 @@ export default {
           ),
         ]);
 
-        // 12. Prepare data for OpenAI
+        
 
         const propertyData = {
           tenants,
           properties,
         };
-
-        
 
         const openAIResponse = await fetch(
           "https://api.openai.com/v1/responses",
@@ -576,7 +569,7 @@ export default {
           },
         );
 
-        // 14. Handle OpenAI errors
+      
 
         if (!openAIResponse.ok) {
           const errorDetails = await openAIResponse.text();
@@ -593,8 +586,6 @@ export default {
           );
         }
 
-        
-
         const openAIResult: unknown = await openAIResponse.json();
 
         if (
@@ -605,8 +596,6 @@ export default {
         ) {
           throw new Error("Invalid OpenAI response");
         }
-
-        
 
         const answer = openAIResult.output
           .filter(
@@ -634,8 +623,6 @@ export default {
         if (!answer.trim()) {
           throw new Error("OpenAI returned an empty answer");
         }
-
-        
 
         return Response.json({
           success: true,
