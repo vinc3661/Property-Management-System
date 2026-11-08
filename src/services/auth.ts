@@ -63,4 +63,31 @@ return confirmation;
   throw error;
 }
 
+
 };
+
+
+export async function verifyPhoneCode(
+  confirmation:ConfirmationResult,
+  code:string,
+):Promise<User>{
+try{
+const credentials=await confirmation.confirm(code);
+
+console.log("phone verification successful",credentials.user.uid);
+
+return credentials.user;
+
+}catch(error){
+  console.error("phone verification failed:",error);
+  throw error;
+
+}
+
+
+
+};
+
+
+
+

@@ -1,30 +1,23 @@
-import {RateLimit} from "npm:@upstash/ratelimit";
-import {Redis} from "npm:@upstash/redis";
+import { Ratelimit } from "npm:@upstash/ratelimit";
+import { Redis } from "npm:@upstash/redis";
 
+const redis = Redis.fromEnv();
 
-const redis=Redis.fromEnv();
-
-type RateLimitConfig={
-limit:number;
-weindow:string;
-prefix:string;
+type RateLimitConfig = {
+  limit: number;
+  window: string;
+  prefix: string;
 };
 
-export function createRatelimiter(
-    {
-        limit,
-        window,
-        prefix,
-    }
-):RateLimitConfig{
-
-return createLimiter({
-    Redis,
-    limiter:RateLimiter.slidingWindows(limit,windows);
+export function createRateLimiter({
+  limit,
+  window,
+  prefix,
+}: RateLimitConfig) {
+  return new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(limit, window),
     prefix,
-    analytics:false,
-});
-
-
-
-};
+    analytics: false,
+  });
+}
