@@ -1,9 +1,17 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import {signInWithEmailAndPassword} from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithPhoneNumber,
+  type RecaptchaVerifier,
+  type ConfirmationResult,
+  type User,
+} from "firebase/auth";
+
+
 import {auth} from "./firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { GoogleAuthProvider, signInWithPopup,signInWithPhoneNumber, type RecaptchaVerifier, type ConfirmationResult } from "firebase/auth";
-import type { User } from "firebase/auth";
 export async function registerUser(email:string,password:string):Promise<void>{
     try{
  
