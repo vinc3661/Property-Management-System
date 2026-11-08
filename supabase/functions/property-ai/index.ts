@@ -2,7 +2,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 import * as jose from "jsr:@panva/jose@6";
-
+import {createRateLimit} from"./_shared/rateLimit.ts"
 const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
 
 const publicJwks = jose.createRemoteJWKSet(
@@ -11,7 +11,13 @@ const publicJwks = jose.createRemoteJWKSet(
   ),
 );
 
-
+const applicationRateLimit=await createRateLimit(
+  {
+    limit:10,
+    windows:"10 h",
+    prefix:"property-ai"
+  }
+);
 
 async function getGoogleAccessToken(
   serviceAccountJson: string,
@@ -105,6 +111,48 @@ async function getFirestoreDocument(
 
   return await response.json();
 }
+
+try{
+
+resultRateLimit=await applicationRateLimit.limit(uid);
+if(error){
+  console.error("rate limit unavailable:",
+    error instanceof ? error.message:"unknown error"
+  );
+}
+
+          return Response.json(
+            {
+              error:
+                "Rate-limiting service temporarily unavailable. Please try again later.",
+            },
+            {
+              status: 503,
+              headers: corsHeaders,
+            }
+          );
+}
+
+if(!resultRateLimit.success){
+  const retryAfter=Math.max(
+  1,
+Math.ceil(resultRateLimit.rest-Date now ())/1000);
+
+
+return Response.json(
+  {error:"exeeded Ai assitant reques try again later",retryAfter},
+  {status:429,
+  headers:{
+    ...corseHeaders,
+    "RetryAfter":string(RetryAfter)
+
+  },
+},
+);
+
+}
+
+
 
 
 
