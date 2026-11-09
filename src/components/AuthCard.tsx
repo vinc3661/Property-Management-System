@@ -7,7 +7,8 @@ import {
   RecaptchaVerifier,
   type ConfirmationResult,
 } from "firebase/auth";
-
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 import { auth } from "../services/firebase";
 import {
   signWithNumber,
@@ -100,6 +101,11 @@ export function AuthCard({
 
   const handleSendCode = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+      
+  if (!/^\+[1-9]\d{7,14}$/.test(phoneNumber)) {
+    setPhoneError("Enter a valid international number, e.g. +254712345678.");
+    return;
+  }
     setPhoneError("");
     setPhoneLoading(true);
 
@@ -268,16 +274,29 @@ const handleVerifyCode = async (e: React.FormEvent<HTMLFormElement>) => {
                           Phone number
                         </label>
 
-                        <input
-                          type="tel"
-                          value={phoneNumber}
-                          onChange={(e) =>
-                            setPhoneNumber(e.target.value)
-                          }
-                          placeholder="+254712345678"
-                          className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          required
-                        />
+                       <div className="space-y-2">
+  <label
+    htmlFor="phoneNumber"
+    className="block text-sm font-medium text-[#1f2328]"
+  >
+    Phone number
+  </label>
+
+  <PhoneInput
+    id="phoneNumber"
+    international
+    defaultCountry="KE"
+    withCountryCallingCode
+    countryCallingCodeEditable={false}
+    value={phoneNumber || undefined}
+    onChange={(value: string | undefined) => setPhoneNumber(value || "")}
+    placeholder="712 345 678"
+    numberInputProps={{
+      autoComplete: "tel",
+      required: true,
+    }}
+  />
+</div>
                       </div>
 
                       <button
@@ -301,17 +320,18 @@ const handleVerifyCode = async (e: React.FormEvent<HTMLFormElement>) => {
                         </label>
 
                         <input
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="one-time-code"
-                          value={verificationCode}
-                          onChange={(e) =>
-                            setVerificationCode(e.target.value)
-                          }
-                          placeholder="Enter SMS code"
-                          className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          required
-                        />
+                  type="text"
+                inputMode="numeric"
+                     autoComplete="one-time-code"
+                    maxLength={6}
+                  value={verificationCode}
+                 onChange={(e) =>
+               setVerificationCode(e.target.value.replace(/\D/g, ""))
+                   }
+                  placeholder="123456"
+                 className="w-full rounded-md border border-[#d1d9e0] bg-white px-3 py-2.5 text-sm text-[#1f2328] shadow-sm outline-none transition-colors placeholder:text-[#818b98] focus:border-[#0969da] focus:ring-2 focus:ring-[#0969da]/20"
+                   required
+/>
                       </div>
 
                       <button

@@ -80,17 +80,17 @@ export async function rejectApplication(applicationId:string){
 
     const user=auth.currentUser;
 if(!user){
-    console.error("no signed user");
-    throw error;
+    console.error("no signed user:");
+    throw  new  Error("no signed user");
 };
-    const token=await getTokenId();
+    const token=await user.getIdToken();
 
     if(!token){
         console.error("invalid token");
-        throw error;
+        throw new Error("invalid token");
     };
 
-const {error,data}=await supabaseAdmin.functions(
+const {error,data}=await supabase.functions.invoke(
     "admin-reject-application",
     {
 body:{

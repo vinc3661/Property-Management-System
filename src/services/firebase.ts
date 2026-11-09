@@ -110,23 +110,24 @@ export function subscribeToTenants(
   });
 }
 
-export async function getTenantsFromCloud(): Promise<Tenant[]> {
+export async function getTenantsFromCloud(landlordId: string): Promise<Tenant[]> {
   try {
-    const tenantCollection = collection(db, TENANT_COLLECTION);
-    const querySnapshot = await getDocs(tenantCollection);
+    const tenantQuery = query(
+      collection(db, TENANT_COLLECTION),
+      where("landlordId", "==", landlordId)
+    );
 
-    const tenants: Tenant[] = querySnapshot.docs.map((doc) => ({
-      ...(doc.data() as Omit<Tenant, "id">),
-      id: doc.id,
+    const querySnapshot = await getDocs(tenantQuery);
+
+    return querySnapshot.docs.map((tenantDoc) => ({
+      ...(tenantDoc.data() as Omit<Tenant, "id">),
+      id: tenantDoc.id,
     }));
-
-    return tenants;
   } catch (error) {
-    console.error("Failed to get tenants:", error);
+    console.error("failed to get tenant in Cloud:", error);
     throw error;
   }
 };
-
 
 export  async function addPropertiesToCloud(landlordId: string, PropertyData:Omit<Property,'id'|"landlordId">):Promise<Property>{
 try{
@@ -167,25 +168,26 @@ export async function updatePropertiesInCloud(id:string,updates:Partial<Omit<Pro
     }
   };
 
-  export async function getPropertiesFromCloud():Promise<Property[]>{
+  export async function getPropertiesFromCloud(landlordId:string):Promise<Property[]>{
     try{
-      const propertyCollection=collection(db,PROPERTY_COLLECTION);
-      const QuerySnapShot=await getDocs(propertyCollection);
+      const propertyQuery=query(
+        collection(db,PROFILE_COLLECTION),
+        where("landlordId","==","landlordId"),
+      );
+const onSnapshot=await getDocs(propertyQuery);
 
-     const Properties:Property[]=QuerySnapShot.docs.map((doc)=>({
-       ...(doc.data() as Omit <Property, 'id'> ),
-       id:doc.id,
-
-       
-
-     }));
-return Properties;
+return onSnapshot.docs.map((propertyDoc) => ({
+  ...(propertyDoc.data() as Omit<Property, "id">),
+  id: propertyDoc.id,
+}));
     }catch(error){
-      console.error('failed to get Property in Cloud:',error);
-      throw error
+      console.error("failed to retrieve property data:",error);
+      throw new  Error("failed to get properties");
+    };
+  }
 
-    }
-  };
+
+  
 
   export function subscribeToProperties(
     landlordId: string,
