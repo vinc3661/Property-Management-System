@@ -171,7 +171,7 @@ export async function updatePropertiesInCloud(id:string,updates:Partial<Omit<Pro
   export async function getPropertiesFromCloud(landlordId:string):Promise<Property[]>{
     try{
       const propertyQuery=query(
-        collection(db,PROFILE_COLLECTION),
+        collection(db,PROPERTY_COLLECTION),
         where("landlordId","==",landlordId),
       );
 const onSnapshot=await getDocs(propertyQuery);

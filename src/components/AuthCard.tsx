@@ -1,19 +1,8 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { House } from "lucide-react";
-import {
-  RecaptchaVerifier,
-  type ConfirmationResult,
-} from "firebase/auth";
-import PhoneInput from "react-phone-number-input";
-import "react-phone-number-input/style.css";
-import { auth } from "../services/firebase";
-import {
-  signWithNumber,
-  verifyPhoneCode,
-} from "../services/auth";
 
 type LoginData = {
   email: string;
@@ -38,7 +27,6 @@ export function AuthCard({
 }: AuthCardProps) {
   const [isLoging, setIsLoging] = useState<boolean>(false);
 
-  
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
@@ -46,106 +34,8 @@ export function AuthCard({
   const [registerPassword, setRegisterPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  
-  const [showPhoneSignIn, setShowPhoneSignIn] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [confirmationResult, setConfirmationResult] =
-    useState<ConfirmationResult | null>(null);
+  const [passwordError, setPasswordError] = useState("");
 
-  const [phoneLoading, setPhoneLoading] = useState(false);
-  const [phoneError, setPhoneError] = useState("");
-
-  
-  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
-  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
-
-  
-  useEffect(() => {
-    const container = recaptchaContainerRef.current;
-
-    if (!container) return;
-
-    const verifier = new RecaptchaVerifier(auth, container, {
-      size: "invisible",
-    });
-
-    recaptchaVerifierRef.current = verifier;
-
-    return () => {
-      verifier.clear();
-      recaptchaVerifierRef.current = null;
-    };
-  }, []);
-
-  
-  const handleNumberSignIn = async (number: string) => {
-    try {
-      const appVerifier = recaptchaVerifierRef.current;
-
-      if (!appVerifier) {
-        throw new Error("reCAPTCHA has not been initialized.");
-      }
-
-      const confirmation = await signWithNumber(
-        number,
-        appVerifier
-      );
-
-      return confirmation;
-    } catch (error) {
-      console.error("Phone sign-in failed:", error);
-      throw error;
-    }
-  };
-
-  const handleSendCode = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-      
-  if (!/^\+[1-9]\d{7,14}$/.test(phoneNumber)) {
-    setPhoneError("Enter a valid international number, e.g. +254712345678.");
-    return;
-  }
-    setPhoneError("");
-    setPhoneLoading(true);
-
-    try {
-      const confirmation = await handleNumberSignIn(phoneNumber);
-
-      setConfirmationResult(confirmation);
-    } catch (error) {
-      console.error(error);
-      setPhoneError(
-        "Could not send the verification code. Check your number and try again."
-      );
-    } finally {
-      setPhoneLoading(false);
-    }
-  };
-const handleVerifyCode = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-
-  if (!confirmationResult) return;
-
-  if (!/^\d{6}$/.test(verificationCode)) {
-    setPhoneError("Please enter the 6-digit verification code.");
-    return;
-  }
-
-  setPhoneError("");
-  setPhoneLoading(true);
-
-  try {
-    await verifyPhoneCode(confirmationResult, verificationCode);
-  } catch (error) {
-    console.error("OTP verification failed:", error);
-    setPhoneError("Invalid verification code. Please try again.");
-  } finally {
-    setPhoneLoading(false);
-  }
-};
-
-  
   const handleLogin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -158,12 +48,12 @@ const handleVerifyCode = async (e: React.FormEvent<HTMLFormElement>) => {
     setLoginPassword("");
   };
 
-
   const handleRegister = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setPasswordError("");
 
     if (registerPassword !== confirmPassword) {
-      alert("Passwords do not match");
+      setPasswordError("Passwords do not match.");
       return;
     }
 
@@ -178,375 +68,249 @@ const handleVerifyCode = async (e: React.FormEvent<HTMLFormElement>) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-3 sm:p-6">
       <div className="grid w-full max-w-5xl grid-cols-1 md:grid-cols-2 bg-white rounded-2xl shadow-lg overflow-hidden">
 
-    
-        <div className="order-2 flex min-w-0 items-center p-5 sm:p-8 md:order-1 md:p-8 lg:p-1">
-
+      
+        <div className="order-2 flex min-w-0 items-center p-5 sm:p-8 md:order-1 md:p-10">
           <div className="w-full">
-
-            
-            <div ref={recaptchaContainerRef} />
-
-            {!showPhoneSignIn && (
-              <>
-                
-                <button
-                  type="button"
-                  onClick={onGoogleSignIn}
-                  className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 48 48"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      fill="#EA4335"
-                      d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-                    />
-                    <path
-                      fill="#4285F4"
-                      d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.42 37.96 46.98 31.9 46.98 24.55z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.53 2.56 10.78l7.97-6.19z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.89 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.97 6.19C6.51 42.62 14.62 48 24 48z"
-                    />
-                  </svg>
-
-                  Continue with Google
-                </button>
-
-          
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPhoneSignIn(true);
-                    setPhoneError("");
-                  }}
-                  className="mb-6 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
-                >
-                  Continue with phone number
-                </button>
-              </>
-            )}
 
             <AnimatePresence mode="wait">
 
-              
-              {showPhoneSignIn ? (
+              {isLoging ? (
 
+                
                 <motion.div
-                  key="phone"
+                  key="login"
                   className="w-full"
                   initial={{ opacity: 0, x: 30 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -30 }}
-                  transition={{ duration: 0.35 }}
+                  transition={{
+                    duration: 0.35,
+                    ease: "easeInOut",
+                  }}
                 >
-                  <h2 className="text-3xl font-bold text-gray-800">
-                    {confirmationResult
-                      ? "Verify your number"
-                      : "Phone sign in"}
+                  <h2 className="text-3xl sm:text-4xl font-bold text-gray-800">
+                    Welcome back
                   </h2>
 
                   <p className="mt-2 mb-8 text-gray-500">
-                    {confirmationResult
-                      ? "Enter the verification code sent to your phone."
-                      : "Enter your phone number to receive a verification code."}
+                    Login to continue.
                   </p>
 
-                  {!confirmationResult ? (
-
-                    <form
-                      onSubmit={handleSendCode}
-                      className="flex flex-col gap-5"
-                    >
-                      <div className="flex flex-col gap-2">
-                        <label className="font-medium text-gray-700">
-                          Phone number
-                        </label>
-
-                       <div className="space-y-2">
-  <label
-    htmlFor="phoneNumber"
-    className="block text-sm font-medium text-[#1f2328]"
-  >
-    Phone number
-  </label>
-
-  <PhoneInput
-    id="phoneNumber"
-    international
-    defaultCountry="KE"
-    withCountryCallingCode
-    countryCallingCodeEditable={false}
-    value={phoneNumber || undefined}
-    onChange={(value: string | undefined) => setPhoneNumber(value || "")}
-    placeholder="712 345 678"
-    numberInputProps={{
-      autoComplete: "tel",
-      required: true,
-    }}
-  />
-</div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={phoneLoading}
-                        className="rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        {phoneLoading ? "Sending code..." : "Send verification code"}
-                      </button>
-                    </form>
-
-                  ) : (
-
-                    <form
-                      onSubmit={handleVerifyCode}
-                      className="flex flex-col gap-5"
-                    >
-                      <div className="flex flex-col gap-2">
-                        <label className="font-medium text-gray-700">
-                          Verification code
-                        </label>
-
-                        <input
-                  type="text"
-                inputMode="numeric"
-                     autoComplete="one-time-code"
-                    maxLength={6}
-                  value={verificationCode}
-                 onChange={(e) =>
-               setVerificationCode(e.target.value.replace(/\D/g, ""))
-                   }
-                  placeholder="123456"
-                 className="w-full rounded-md border border-[#d1d9e0] bg-white px-3 py-2.5 text-sm text-[#1f2328] shadow-sm outline-none transition-colors placeholder:text-[#818b98] focus:border-[#0969da] focus:ring-2 focus:ring-[#0969da]/20"
-                   required
-/>
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={phoneLoading}
-                        className="rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        {phoneLoading ? "Verifying..." : "Verify code"}
-                      </button>
-                    </form>
-                  )}
-
-                  {phoneError && (
-                    <p className="mt-4 text-sm text-red-600">
-                      {phoneError}
-                    </p>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPhoneSignIn(false);
-                      setConfirmationResult(null);
-                      setVerificationCode("");
-                      setPhoneError("");
-                    }}
-                    className="mt-5 w-full text-sm text-gray-500 hover:text-blue-600"
+                  <form
+                    onSubmit={handleLogin}
+                    className="flex flex-col gap-5"
                   >
-                    Back to email sign in
-                  </button>
+                    <div className="flex flex-col gap-2">
+                      <label className="font-medium text-gray-700">
+                        Email
+                      </label>
 
+                      <input
+                        type="email"
+                        value={loginEmail}
+                        onChange={(e) =>
+                          setLoginEmail(e.target.value)
+                        }
+                        placeholder="Enter your email"
+                        className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        required
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label className="font-medium text-gray-700">
+                        Password
+                      </label>
+
+                      <input
+                        type="password"
+                        value={loginPassword}
+                        onChange={(e) =>
+                          setLoginPassword(e.target.value)
+                        }
+                        placeholder="Enter your password"
+                        className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
+                    >
+                      Login
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsLoging(false)}
+                      className="text-sm text-gray-500 hover:text-blue-600"
+                    >
+                      Don't have an account?{" "}
+                      <span className="font-semibold">
+                        Register
+                      </span>
+                    </button>
+                  </form>
                 </motion.div>
 
               ) : (
 
                 
-                isLoging ? (
+                <motion.div
+                  key="register"
+                  className="w-full"
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 30 }}
+                  transition={{
+                    duration: 0.35,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <h2 className="text-3xl sm:text-4xl font-bold text-gray-800">
+                    Create your account
+                  </h2>
 
-                  <motion.div
-                    key="login"
-                    className="w-full"
-                    initial={{ opacity: 0, x: 30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -30 }}
-                    transition={{
-                      duration: 0.35,
-                      ease: "easeInOut",
-                    }}
+                  <p className="mt-2 mb-8 text-gray-500">
+                    Create your account to get started.
+                  </p>
+
+                  <form
+                    onSubmit={handleRegister}
+                    className="flex flex-col gap-5"
                   >
-                    <h2 className="text-4xl font-bold text-gray-800">
-                      Welcome back
-                    </h2>
+                    <div className="flex flex-col gap-2">
+                      <label className="font-medium text-gray-700">
+                        Email
+                      </label>
 
-                    <p className="mt-2 mb-8 text-gray-500">
-                      Login to continue.
-                    </p>
+                      <input
+                        type="email"
+                        value={registerEmail}
+                        onChange={(e) =>
+                          setRegisterEmail(e.target.value)
+                        }
+                        placeholder="Enter your email"
+                        className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        required
+                      />
+                    </div>
 
-                    <form
-                      onSubmit={handleLogin}
-                      className="flex flex-col gap-5"
+                    <div className="flex flex-col gap-2">
+                      <label className="font-medium text-gray-700">
+                        Password
+                      </label>
+
+                      <input
+                        type="password"
+                        value={registerPassword}
+                        onChange={(e) =>
+                          setRegisterPassword(e.target.value)
+                        }
+                        placeholder="Enter your password"
+                        className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        required
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label className="font-medium text-gray-700">
+                        Confirm password
+                      </label>
+
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) =>
+                          setConfirmPassword(e.target.value)
+                        }
+                        placeholder="Confirm your password"
+                        className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        required
+                      />
+                    </div>
+
+                    {passwordError && (
+                      <p className="text-sm text-red-600">
+                        {passwordError}
+                      </p>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
                     >
-                      <div className="flex flex-col gap-2">
-                        <label className="font-medium text-gray-700">
-                          Email
-                        </label>
-
-                        <input
-                          type="email"
-                          value={loginEmail}
-                          onChange={(e) =>
-                            setLoginEmail(e.target.value)
-                          }
-                          placeholder="Enter your email"
-                          className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          required
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <label className="font-medium text-gray-700">
-                          Password
-                        </label>
-
-                        <input
-                          type="password"
-                          value={loginPassword}
-                          onChange={(e) =>
-                            setLoginPassword(e.target.value)
-                          }
-                          placeholder="Enter your password"
-                          className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          required
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
-                      >
-                        Login
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setIsLoging(false)}
-                        className="text-sm text-gray-500 hover:text-blue-600"
-                      >
-                        Don't have an account?{" "}
-                        <span className="font-semibold">
-                          Register
-                        </span>
-                      </button>
-                    </form>
-                  </motion.div>
-
-                ) : (
-
-                  <motion.div
-                    key="register"
-                    className="w-full"
-                    initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 30 }}
-                    transition={{
-                      duration: 0.35,
-                      ease: "easeInOut",
-                    }}
-                  >
-                    <h2 className="text-4xl font-bold text-gray-800">
-                      Create your account
-                    </h2>
-
-                    <p className="mt-2 mb-8 text-gray-500">
-                      Create your account to get started.
-                    </p>
-
-                    <form
-                      onSubmit={handleRegister}
-                      className="flex flex-col gap-5"
-                    >
-                      <div className="flex flex-col gap-2">
-                        <label className="font-medium text-gray-700">
-                          Email
-                        </label>
-
-                        <input
-                          type="email"
-                          value={registerEmail}
-                          onChange={(e) =>
-                            setRegisterEmail(e.target.value)
-                          }
-                          placeholder="Enter your email"
-                          className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          required
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <label className="font-medium text-gray-700">
-                          Password
-                        </label>
-
-                        <input
-                          type="password"
-                          value={registerPassword}
-                          onChange={(e) =>
-                            setRegisterPassword(e.target.value)
-                          }
-                          placeholder="Enter your password"
-                          className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          required
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <label className="font-medium text-gray-700">
-                          Confirm password
-                        </label>
-
-                        <input
-                          type="password"
-                          value={confirmPassword}
-                          onChange={(e) =>
-                            setConfirmPassword(e.target.value)
-                          }
-                          placeholder="Confirm your password"
-                          className="rounded-xl border border-gray-300 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          required
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
-                      >
-                        Register
-                      </button>
-                    </form>
+                      Register
+                    </button>
 
                     <button
                       type="button"
-                      onClick={() => setIsLoging(true)}
-                      className="mt-5 w-full text-sm text-gray-500 hover:text-blue-600"
+                      onClick={() => {
+                        setPasswordError("");
+                        setIsLoging(true);
+                      }}
+                      className="text-sm text-gray-500 hover:text-blue-600"
                     >
                       Already have an account?{" "}
                       <span className="font-semibold">
                         Login
                       </span>
                     </button>
-                  </motion.div>
+                  </form>
+                </motion.div>
 
-                )
               )}
 
             </AnimatePresence>
+
+            
+            <div className="mt-7">
+              <div className="relative mb-5 flex items-center">
+                <div className="flex-grow border-t border-gray-200" />
+
+                <span className="px-3 text-sm text-gray-400">
+                  Or continue with
+                </span>
+
+                <div className="flex-grow border-t border-gray-200" />
+              </div>
+
+              <button
+                type="button"
+                onClick={onGoogleSignIn}
+                className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 48 48"
+                  className="h-5 w-5"
+                >
+                  <path
+                    fill="#EA4335"
+                    d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.42 37.96 46.98 31.9 46.98 24.55z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.53 2.56 10.78l7.97-6.19z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.89 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.97 6.19C6.51 42.62 14.62 48 24 48z"
+                  />
+                </svg>
+
+                Continue with Google
+              </button>
+            </div>
+
           </div>
         </div>
 
