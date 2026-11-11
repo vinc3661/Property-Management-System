@@ -18,12 +18,14 @@ type AuthCardProps = {
   onRegister: (data: RegisterData) => void;
   onSignUser: (data: LoginData) => void;
   onGoogleSignIn: () => void;
+  
 };
 
 export function AuthCard({
   onRegister,
   onSignUser,
   onGoogleSignIn,
+  
 }: AuthCardProps) {
   const [isLoging, setIsLoging] = useState<boolean>(false);
 

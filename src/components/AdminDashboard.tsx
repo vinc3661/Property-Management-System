@@ -15,7 +15,7 @@ type AdminApplication = {
   status: string;
   documentUrl: string | null;
 };
-
+import {signOutAccount} from "../services/auth";
 function ApplicationCardSkeleton() {
   return (
     <article
@@ -101,7 +101,7 @@ export function AdminDashboard() {
 
     if (!confirmed) return;
 
-    // Lock immediately, before React re-renders.
+    
     approvalInProgressRef.current = true;
 
     setApprovingId(application.id);
@@ -153,7 +153,13 @@ export function AdminDashboard() {
   const pendingCount = applications.filter(
     (application) => application.status === "pending"
   ).length;
-
+const handleLogOut=async ()=>{
+  try{
+    await signOutAccount();
+  }catch(error){
+    console.error("failed to logout");
+  }
+};
   return (
     <main className="min-h-screen bg-gray-100 p-4 md:p-8">
       <div className="mx-auto max-w-7xl">
@@ -171,7 +177,12 @@ export function AdminDashboard() {
               Review landlord applications and manage access.
             </p>
           </div>
-
+             <button
+             type="button"
+             onClick={handleLogOut}
+             className="rounded bg-black font-semibold text-white hover:bg-gray-600">
+              sign out
+             </button>
           <button
             type="button"
             onClick={() => void loadApplications()}

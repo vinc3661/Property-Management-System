@@ -1,19 +1,15 @@
 
 import "@supabase/functions-js/edge-runtime.d.ts";
+
+import { pipeline } from "@supabase/middleware";
+import { withCors } from "@supabase/middleware/cors";
 import { withSupabase } from "@supabase/server";
 import * as jose from "jsr:@panva/jose@6";
+
 import { createRateLimiter } from "../_shared/rateLimit.ts";
 
+
 const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
-
-const bucketName =
-  Deno.env.get("OWNERSHIP_DOCUMENTS_BUCKET") ??
-  "landlord-ownership-documents";
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
-
-
 
 const bucketName =
   Deno.env.get("OWNERSHIP_DOCUMENTS_BUCKET") ??
@@ -33,6 +29,8 @@ const rateLimiter = createRateLimiter({
   prefix: "pms:landlord-application",
 });
 
+
+
 const firebaseJwks = projectId
   ? jose.createRemoteJWKSet(
       new URL(
@@ -41,14 +39,55 @@ const firebaseJwks = projectId
     )
   : null;
 
+async function verifyFirebaseToken(
+  authorizationHeader: string | null
+) {
+  if (!authorizationHeader?.startsWith("Bearer ")) {
+    throw new Error("Missing or invalid authorization token");
+  }
+
+  if (!projectId || !firebaseJwks) {
+    throw new Error("Firebase authentication is not configured");
+  }
+
+  const token = authorizationHeader.slice(7);
+
+  const { payload } = await jose.jwtVerify(
+    token,
+    firebaseJwks,
+    {
+      issuer: `https://securetoken.google.com/${projectId}`,
+      audience: projectId,
+      algorithms: ["RS256"],
+    }
+  );
+
+  if (
+    !payload.sub ||
+    typeof payload.sub !== "string" ||
+    payload.email_verified !== true
+  ) {
+    throw new Error("Invalid or unverified Firebase account");
+  }
+
+  return {
+    uid: payload.sub,
+    email: payload.email,
+  };
+}
+
+
 function getFileExtension(contentType: string): string {
   switch (contentType) {
     case "application/pdf":
       return "pdf";
+
     case "image/jpeg":
       return "jpg";
+
     case "image/png":
       return "png";
+
     default:
       throw new Error("Unsupported file type");
   }
@@ -95,43 +134,28 @@ function validateFileSignature(
   return false;
 }
 
-async function verifyFirebaseToken(
-  authorizationHeader: string | null
-) {
-  if (!authorizationHeader?.startsWith("Bearer ")) {
-    throw new Error("Missing or invalid authorization token");
-  }
-
-  if (!projectId || !firebaseJwks) {
-    throw new Error("Firebase authentication is not configured");
-  }
-
-  const token = authorizationHeader.slice(7);
-
-  const { payload } = await jose.jwtVerify(token, firebaseJwks, {
-    issuer: `https://securetoken.google.com/${projectId}`,
-    audience: projectId,
-    algorithms: ["RS256"],
-  });
-
-  if (
-    !payload.sub ||
-    typeof payload.sub !== "string" ||
-    payload.email_verified !== true
-  ) {
-    throw new Error("Invalid or unverified Firebase account");
-  }
-
-  return {
-    uid: payload.sub,
-    email: payload.email,
-  };
-}
-
 export default {
-  fetch: withSupabase(
-    { auth: ["publishable"] },
+  fetch: pipeline(
+    [
+      
+      withCors({
+        origin: [
+          "http://localhost:5173",
+          "http://127.0.0.1:5173",
+          "http://192.168.100.102:5173",
+        ],
+        methods: ["POST", "OPTIONS"],
+        maxAge: 86400,
+      }),
+
+      withSupabase({
+        auth: ["publishable"],
+        cors: "disabled",
+      }),
+    ],
+
     async (req, ctx) => {
+     
       if (req.method !== "POST") {
         return Response.json(
           { error: "Method not allowed" },
@@ -140,23 +164,34 @@ export default {
       }
 
       try {
+      
         const user = await verifyFirebaseToken(
           req.headers.get("Authorization")
         );
 
-        const rateLimitResult = await rateLimiter.check(user.uid);
+        
+        const rateLimitResult = await rateLimiter.check(
+          user.uid
+        );
 
         if (!rateLimitResult.success) {
           return Response.json(
-            { error: "Too many applications. Please try again later." },
+            {
+              error:
+                "Too many applications. Please try again later.",
+            },
             { status: 429 }
           );
         }
 
+       
         const formData = await req.formData();
 
-        const propertyAddress = formData.get("propertyAddress");
-        const ownershipDocument = formData.get("ownershipDocument");
+        const propertyAddress =
+          formData.get("propertyAddress");
+
+        const ownershipDocument =
+          formData.get("ownershipDocument");
 
         if (
           typeof propertyAddress !== "string" ||
@@ -175,6 +210,7 @@ export default {
           );
         }
 
+      
         if (ownershipDocument.size === 0) {
           return Response.json(
             { error: "The uploaded document is empty" },
@@ -189,12 +225,17 @@ export default {
           );
         }
 
+       
+
         if (!ALLOWED_MIME_TYPES.has(ownershipDocument.type)) {
           return Response.json(
-            { error: "Only PDF, JPEG and PNG files are allowed" },
+            {
+              error: "Only PDF, JPEG and PNG files are allowed",
+            },
             { status: 400 }
           );
         }
+
 
         const fileBytes = new Uint8Array(
           await ownershipDocument.arrayBuffer()
@@ -207,10 +248,14 @@ export default {
           )
         ) {
           return Response.json(
-            { error: "File content does not match its file type" },
+            {
+              error: "File content does not match its file type",
+            },
             { status: 400 }
           );
         }
+
+     
 
         const extension = getFileExtension(
           ownershipDocument.type
@@ -218,6 +263,8 @@ export default {
 
         const documentPath =
           `${user.uid}/${crypto.randomUUID()}.${extension}`;
+
+       
 
         const { error: uploadError } =
           await ctx.supabaseAdmin.storage
@@ -228,39 +275,53 @@ export default {
             });
 
         if (uploadError) {
-          console.error("Ownership document upload failed:", uploadError);
+          console.error(
+            "Ownership document upload failed:",
+            uploadError
+          );
 
           return Response.json(
-            { error: "Failed to upload ownership document" },
+            {
+              error: "Failed to upload ownership document",
+            },
             { status: 500 }
           );
         }
 
+        
         return Response.json(
           {
-            message: "Landlord application submitted successfully",
+            message:
+              "Landlord application submitted successfully",
             uid: user.uid,
             email: user.email,
             documentPath,
           },
           { status: 201 }
         );
+
       } catch (error) {
-        console.error("Landlord application error:", error);
+        console.error(
+          "Landlord application error:",
+          error
+        );
 
         if (
           error instanceof jose.errors.JWTExpired ||
           error instanceof jose.errors.JWTInvalid
         ) {
           return Response.json(
-            { error: "Your authentication session is invalid or expired" },
+            {
+              error:
+                "Your authentication session is invalid or expired",
+            },
             { status: 401 }
           );
         }
 
         if (
           error instanceof Error &&
-          error.message.includes("authorization")
+          error.message.toLowerCase().includes("authorization")
         ) {
           return Response.json(
             { error: error.message },
@@ -269,7 +330,9 @@ export default {
         }
 
         return Response.json(
-          { error: "Unable to submit landlord application" },
+          {
+            error: "Unable to submit landlord application",
+          },
           { status: 500 }
         );
       }

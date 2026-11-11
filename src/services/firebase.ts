@@ -255,7 +255,6 @@ console.log("Auth email:", auth.currentUser?.email);
       
     };
 
-    
 export async function submitLandlordApplication(
   propertyName: string,
   propertyAddress: string,
@@ -264,38 +263,47 @@ export async function submitLandlordApplication(
   const user = auth.currentUser;
 
   if (!user) {
-    throw new Error("you must have a signed in user account");
+    throw new Error("You must have a signed-in user account");
   }
 
-  const token=await user.getIdToken();
-  if(!token){
-    throw new Error("no signed token");
+  
+  const token = await user.getIdToken();
+
+  if (!token) {
+    throw new Error("No Firebase ID token was obtained");
   }
 
-  const formData=new FormData();
-  formData.append("propertyName",propertyName);
-  formData.append("file",ownershipDocument);
-  formData.append("propertyAddress",propertyAddress);
-  formData.append("firebaseIdToken",token ); 
-const {error,data}=await supabase.functions.invoke<{
-  uid:string,
-  documentPath:string,
-}>("submit-landlord-application",{
+  
+  const formData = new FormData();
 
-body:formData,
+  formData.append("propertyAddress", propertyAddress);
+  formData.append("ownershipDocument", ownershipDocument);
 
-});
+  
+  const { error, data } = await supabase.functions.invoke<{
+    uid: string;
+    documentPath: string;
+  }>("submit-landlord-application", {
+    body: formData,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
-if(error){
-  console.error("supabase function failed:",error.message);
-  throw new Error(error.message);
-};
+  if (error) {
+    console.error("Supabase function failed:", error);
+    throw new Error(error.message);
+  }
 
-if(!data?.documentPath||data.uid !==user.uid){
-  throw new Error("invalid response from document upload service");
-}
+  
+  if (!data?.documentPath || data.uid !== user.uid) {
+    throw new Error("Invalid response from document upload service");
+  }
 
-const applicationRef = doc(collection(db, APPLICATION_COLLECTION));
+  
+  const applicationRef = doc(
+    collection(db, APPLICATION_COLLECTION)
+  );
 
   await setDoc(applicationRef, {
     applicantId: user.uid,
@@ -306,7 +314,4 @@ const applicationRef = doc(collection(db, APPLICATION_COLLECTION));
     submittedAt: serverTimestamp(),
     status: "pending",
   });
-};
-
-
-
+}
