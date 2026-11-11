@@ -8,6 +8,7 @@ import {
   type RecaptchaVerifier,
   type ConfirmationResult,
   type User,
+  signOut,
 } from "firebase/auth";
 
 import {auth} from "./firebase";
@@ -95,6 +96,17 @@ return credentials.user;
 
 };
 
+export async function signOutAccount():Promise<void>{
+try{
 
+  await signOut(auth);
+  console.log("user signed out succcessfully");
+}catch(error){
+  console.error("failed to sign out");
+}
+
+
+
+};
 
 
