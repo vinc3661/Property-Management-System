@@ -5,7 +5,7 @@ import type { User as FirebaseUser } from "firebase/auth";
 import type { Tenant } from "./types/Tenant";
 import type { Property } from "./types/Property";
 import type { UserProfile } from "./types/UserProfile";
-
+import { signOutAccount } from "./services/auth";
 import { TenantForm } from "./components/TenantForm";
 import { TenantCard } from "./components/Tenantcard";
 import { PropertyForm } from "./components/PropertyForm";
