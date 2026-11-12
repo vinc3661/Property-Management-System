@@ -9,6 +9,8 @@ import {
   type ConfirmationResult,
   type User,
   signOut,
+   sendEmailVerification,
+  reload,
 } from "firebase/auth";
 
 import {auth} from "./firebase";
@@ -40,22 +42,29 @@ export async function signUser(email:string,password:string):Promise<void>{
 export function SubscribeToAuthState(callback: (user:User|null) => void){
   return  onAuthStateChanged (auth,callback);
 };
-  
-export async function signInWithGoogle():Promise<User>{
-try{
-const Provider= new GoogleAuthProvider();
-
-const credentials= await signInWithPopup(auth,Provider);
-console.log("Google user:",credentials.user);
-console.log("Google user Id:",credentials.user.uid)
-return credentials.user;
-}catch(error){
-  console.error("google sign in failed:",error);
-  throw error;
 
 
+export async function signInWithGoogle(): Promise<User> {
+  try {
+    const Provider = new GoogleAuthProvider();
+
+    
+    Provider.setCustomParameters({
+      prompt: "select_account",
+    });
+
+    const credentials = await signInWithPopup(auth, Provider);
+
+    console.log("Google user:", credentials.user);
+    console.log("Google user Id:", credentials.user.uid);
+
+    return credentials.user;
+  } catch (error) {
+    console.error("Google sign in failed:", error);
+    throw error;
+  }
 }
-};
+
 
 
 
@@ -110,3 +119,34 @@ try{
 };
 
 
+export async function sendVerificationEmail() {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("No authenticated user found");
+  }
+
+  if (user.emailVerified) {
+    return;
+  }
+
+  await sendEmailVerification(user);
+}
+
+
+export async function refreshEmailVerification() {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("No authenticated user found");
+  }
+
+  await reload(user);
+
+  const token = await user.getIdToken(true);
+
+  return {
+    emailVerified: user.emailVerified,
+    token,
+  };
+}

@@ -17,7 +17,9 @@ serverTimestamp,
   
 } from "firebase/firestore";
 
-import { getAuth} from "firebase/auth";
+import {
+  
+getAuth,} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
 import type {Property} from "../types/Property";
 import type { UserProfile } from "../types/UserProfile";
@@ -267,7 +269,16 @@ export async function submitLandlordApplication(
   }
 
   
-  const token = await user.getIdToken();
+  const token = await user.getIdToken(true);
+
+
+console.log("Firebase authentication diagnostics:", {
+  uid: user.uid,
+  emailVerified: user.emailVerified,
+  provider: user.providerData.map(
+    (provider) => provider.providerId
+  ),
+});
 
   if (!token) {
     throw new Error("No Firebase ID token was obtained");

@@ -62,13 +62,13 @@ async function verifyFirebaseToken(
     }
   );
 
-  if (
-    !payload.sub ||
-    typeof payload.sub !== "string" ||
-    payload.email_verified !== true
-  ) {
-    throw new Error("Invalid or unverified Firebase account");
-  }
+  if (!payload.sub || typeof payload.sub !== "string") {
+  throw new Error("Firebase token is missing a valid user ID");
+}
+
+if (payload.email_verified !== true) {
+  throw new Error("Firebase email address is not verified");
+}
 
   return {
     uid: payload.sub,
@@ -170,7 +170,7 @@ export default {
         );
 
         
-        const rateLimitResult = await rateLimiter.check(
+        const rateLimitResult = await rateLimiter.limit(
           user.uid
         );
 
