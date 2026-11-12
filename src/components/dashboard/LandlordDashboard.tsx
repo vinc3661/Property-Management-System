@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Property } from "../../types/Property";
 import type { Tenant } from "../../types/Tenant";
 
+import { PropertiesPage } from "../propertiesPage";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardHeader } from "./DashboardHeader";
 import { OverviewCards } from "./OverviewCards";
@@ -14,7 +15,6 @@ type LandlordDashboardProps = {
   userName: string;
   onSignOut: () => void;
 
-  
   onAddTenant: (
     tenant: Omit<Tenant, "id" | "landlordId">
   ) => Promise<void>;
@@ -26,7 +26,6 @@ type LandlordDashboardProps = {
     updates: Partial<Omit<Tenant, "id">>
   ) => Promise<void>;
 
-  
   onAddProperty: (
     property: Omit<Property, "id" | "landlordId">
   ) => Promise<void>;
@@ -86,7 +85,7 @@ export function LandlordDashboard({
       <DashboardSidebar
         activePage={activePage}
         onNavigate={setActivePage}
-        onSignOut={setActivePage}
+        onSignOut={onSignOut}
       />
 
       <main className="min-w-0 flex-1">
@@ -97,6 +96,7 @@ export function LandlordDashboard({
         />
 
         <div className="space-y-8 p-8">
+          
           {activePage === "overview" && (
             <OverviewCards
               properties={properties}
@@ -104,18 +104,28 @@ export function LandlordDashboard({
             />
           )}
 
-          {activePage !== "overview" && (
-            <div className="rounded-xl border border-gray-200 bg-white p-8">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {currentPage.title}
-              </h3>
-
-              <p className="mt-2 text-sm text-gray-500">
-                This section is coming together. We'll implement its
-                functionality next.
-              </p>
-            </div>
+          
+          {activePage === "properties" && (
+            <PropertiesPage
+              properties={properties}
+              onAddProperty={onAddProperty}
+            />
           )}
+
+          
+          {activePage !== "overview" &&
+            activePage !== "properties" && (
+              <div className="rounded-xl border border-gray-200 bg-white p-8">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {currentPage.title}
+                </h3>
+
+                <p className="mt-2 text-sm text-gray-500">
+                  This section is coming together. We'll implement its
+                  functionality next.
+                </p>
+              </div>
+            )}
         </div>
       </main>
     </div>

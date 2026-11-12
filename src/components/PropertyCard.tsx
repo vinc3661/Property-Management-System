@@ -1,108 +1,196 @@
-import { useState } from "react";
-import type {Property} from "../types/Property";
 
-type PropertyCardProps={
-property: Property;
-onDelete:(id:string)=>void;
-onUpdate:(id:string, updates:Partial<Omit<Property,'id'>>)=>Promise<void>
+import { useState } from "react";
+import type { Property } from "../types/Property";
+
+type PropertyCardProps = {
+  property: Property;
+  onDelete: (id: string) => Promise<void>;
+  onUpdate: (
+    id: string,
+    updates: Partial<Omit<Property, "id">>
+  ) => Promise<void>;
 };
 
-export function PropertyCard({property, onDelete, onUpdate}:PropertyCardProps){
-   const [isEditing,setIsEditing]=useState<boolean>(false);
-   const [houseNumber,setHouseNumber]=useState<string>('');
-   const [status,setStatus]=useState<"occupied"|"vacant">("vacant");
-   const [rentAmount,setRentAmount]=useState<number>(0);
-   
-const handleEdit=()=>{
-    
+export function PropertyCard({
+  property,
+  onDelete,
+  onUpdate,
+}: PropertyCardProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [houseNumber, setHouseNumber] = useState(property.houseNumber);
+  const [status, setStatus] = useState<"occupied" | "vacant">(
+    property.status
+  );
+  const [rentAmount, setRentAmount] = useState(property.rentAmount);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleEdit = () => {
     setHouseNumber(property.houseNumber);
     setStatus(property.status);
     setRentAmount(property.rentAmount);
-   setIsEditing(true);
-};
+    setIsEditing(true);
+  };
 
+  const handleCancel = () => {
+    setHouseNumber(property.houseNumber);
+    setStatus(property.status);
+    setRentAmount(property.rentAmount);
+    setIsEditing(false);
+  };
 
-const handleSave=async ()=>{
-    try{
-    await onUpdate(property.id, {houseNumber,status,rentAmount});
-        setIsEditing(false);
-    }catch(error){
-        console.error('failed to save updates:',error)
+  const handleSave = async () => {
+    if (!houseNumber.trim() || rentAmount <= 0) return;
+
+    try {
+      setIsSaving(true);
+
+      await onUpdate(property.id, {
+        houseNumber: houseNumber.trim(),
+        status,
+        rentAmount,
+      });
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Failed to update property:", error);
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await onDelete(property.id);
+    } catch (error) {
+      console.error("Failed to delete property:", error);
+    } finally {
+      setIsDeleting(false);
     }
+  };
 
-   if(isEditing){
-    return(
-    <div className="rounded-2xl bg-white p-5 shadow">
-    <h3 className="mb-4 text-xl font-bold text-gray-700">
-        Edit Property
-    </h3>
-    <input
-    type="text"
-    value={houseNumber}
-    onChange={(e)=>setHouseNumber(e.target.value)}
-    placeholder="Enter house number"
-    className="mb-3 w-full rounded-lg border p-2"
-    />
-    <input 
-    type="number"
-    value={rentAmount}
-    onChange={(e)=>setRentAmount(Number(e.target.value))}
-    placeholder="Enter rent Amount"
-    className="mb-3 w-full rounded-lg border p-2"
-    />
-    <select
-    value={status}
-    onChange={(e)=>setStatus(e.target.value as"occupied"|"vacant")}
-    className="mb-3 w-full rounded-lg border p-2"
-    >
- <option value="occupied">Occupied</option>
- <option value="vacant">Vacant</option>
+  return (
+    <article className="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+      {/* Card header */}
+      <div className="flex items-start justify-between border-b border-gray-100 p-5">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+            Property
+          </p>
 
-    </select>
-    <div>
-    <button
-        onClick={handleSave}
-        className="mr-2 rounded-lg bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-    >
-        Save changes
-    </button>
-    <button
-        onClick={()=>setIsEditing(false)}
-        className="rounded-lg bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
-    >
-        Cancel
-    </button>
-    </div>
-    </div>
-    )
-   }
-return(
-    <div className="rounded-2xl bg-white p-5 shadow">
-        <h3 className="mb-4 text-xl font-bold text-gray-700">
-            Property Details
-        </h3>
-       <p className="mb-2 text-gray-600">
-        houseNumber:{property.houseNumber}</p>   
-       <p className="mb-3 text-gray-600">
-        rentAmount:{property.rentAmount}</p>
-           <p className="mb-4 text-gray-600">status:{property.status}</p>
+          <h3 className="mt-1 text-xl font-bold text-gray-900">
+            House {property.houseNumber}
+          </h3>
+        </div>
 
-      <button 
-      onClick={handleEdit}
-      className="mr-2 rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-      >
-        Edit Property
-        </button>
-           <button
-           onClick={()=>onDelete(property.id)}
-           className="ml-2 rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-           >
-            Delete Property
-           </button>
-            
-    </div>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            property.status === "occupied"
+              ? "bg-blue-50 text-blue-700"
+              : "bg-emerald-50 text-emerald-700"
+          }`}
+        >
+          {property.status === "occupied" ? "Occupied" : "Vacant"}
+        </span>
+      </div>
 
+      {isEditing ? (
+        /* Edit form */
+        <div className="space-y-4 p-5">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              House number
+            </label>
 
-)
+            <input
+              type="text"
+              value={houseNumber}
+              onChange={(e) => setHouseNumber(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Monthly rent (KSh)
+            </label>
+
+            <input
+              type="number"
+              min="1"
+              value={rentAmount}
+              onChange={(e) => setRentAmount(Number(e.target.value))}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Occupancy status
+            </label>
+
+            <select
+              value={status}
+              onChange={(e) =>
+                setStatus(e.target.value as "occupied" | "vacant")
+              }
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="occupied">Occupied</option>
+              <option value="vacant">Vacant</option>
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSaving ? "Saving..." : "Save changes"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isSaving}
+              className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Property details */
+        <div className="p-5">
+          <p className="text-sm text-gray-500">Monthly rental income</p>
+
+          <p className="mt-1 text-2xl font-bold text-gray-900">
+            KSh {property.rentAmount.toLocaleString("en-KE")}
+          </p>
+
+          <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+            <button
+              type="button"
+              onClick={handleEdit}
+              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+            >
+              Edit
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </button>
+          </div>
+        </div>
+      )}
+    </article>
+  );
 }
