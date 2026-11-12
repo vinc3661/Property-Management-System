@@ -111,7 +111,8 @@ try{
   await signOut(auth);
   console.log("user signed out succcessfully");
 }catch(error){
-  console.error("failed to sign out");
+  console.error("failed to sign out:",error);
+  throw error;
 }
 
 
