@@ -86,7 +86,7 @@ export function LandlordDashboard({
       <DashboardSidebar
         activePage={activePage}
         onNavigate={setActivePage}
-        onSignOut={onSignOut}
+        onSignOut={setActivePage}
       />
 
       <main className="min-w-0 flex-1">
