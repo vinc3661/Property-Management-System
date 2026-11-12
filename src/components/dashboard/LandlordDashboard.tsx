@@ -13,6 +13,30 @@ type LandlordDashboardProps = {
   tenants: Tenant[];
   userName: string;
   onSignOut: () => void;
+
+  
+  onAddTenant: (
+    tenant: Omit<Tenant, "id" | "landlordId">
+  ) => Promise<void>;
+
+  onDeleteTenant: (tenantId: string) => Promise<void>;
+
+  onUpdateTenant: (
+    id: string,
+    updates: Partial<Omit<Tenant, "id">>
+  ) => Promise<void>;
+
+  
+  onAddProperty: (
+    property: Omit<Property, "id" | "landlordId">
+  ) => Promise<void>;
+
+  onDeleteProperty: (propertyId: string) => Promise<void>;
+
+  onUpdateProperty: (
+    id: string,
+    updates: Partial<Omit<Property, "id">>
+  ) => Promise<void>;
 };
 
 export function LandlordDashboard({
@@ -20,6 +44,12 @@ export function LandlordDashboard({
   tenants,
   userName,
   onSignOut,
+  onAddTenant,
+  onDeleteTenant,
+  onUpdateTenant,
+  onAddProperty,
+  onDeleteProperty,
+  onUpdateProperty,
 }: LandlordDashboardProps) {
   const [activePage, setActivePage] = useState("overview");
 

@@ -1,15 +1,11 @@
 ﻿
 import { useEffect, useState } from "react";
 import type { User as FirebaseUser } from "firebase/auth";
-
+import { LandlordDashboard } from "./components/dashboard/LandlordDashboard";
 import type { Tenant } from "./types/Tenant";
 import type { Property } from "./types/Property";
 import type { UserProfile } from "./types/UserProfile";
 import { signOutAccount } from "./services/auth";
-import { TenantForm } from "./components/TenantForm";
-import { TenantCard } from "./components/Tenantcard";
-import { PropertyForm } from "./components/PropertyForm";
-import { PropertyCard } from "./components/PropertyCard";
 import { AuthCard } from "./components/AuthCard";
 import { UserProfileForm } from "./components/UserProfileForm";
 import { LandlordApplicationFlow } from "./components/Landlord-registration/LandlordApplicationFlow";
@@ -186,7 +182,13 @@ console.log("user signed in");
       setProfileSaving(false);
     }
   };
-
+const handleSignOut=async ()=>{
+  try{
+    await signOutAccount();
+  }catch(error){
+    console.error("sign out failed ");
+  }
+};
   const handleAddTenant = async (
     tenantData: Omit<Tenant, "id" | "landlordId">
   ) => {
@@ -203,6 +205,10 @@ console.log("user signed in");
   };
 
   const handleDeleteTenant = async (tenantId: string) => {
+    if (!landlordId) {
+    console.error("Cannot delete tenant: landlord ID is missing.");
+    return;
+  }
     try {
       await deleteTenantFromCloud(tenantId);
     } catch (error) {
@@ -214,8 +220,13 @@ console.log("user signed in");
     id: string,
     updates: Partial<Omit<Tenant, "id">>
   ) => {
+     if (!landlordId) {
+    console.error("Cannot update tenant: landlord ID is missing.");
+    return;
+  }
     try {
       await updateTenantsInCloud(id, updates);
+
     } catch (error) {
       console.error("Failed to update tenant:", error);
     }
@@ -224,6 +235,10 @@ console.log("user signed in");
   const handleAddProperty = async (
     property: Omit<Property, "id" | "landlordId">
   ) => {
+    if (!landlordId) {
+    console.error("Cannot delete property: landlord ID is missing.");
+    return;
+  }
     if (!landlordId) {
       console.error("Cannot add property: landlord ID is not set.");
       return;
@@ -237,6 +252,10 @@ console.log("user signed in");
   };
 
   const handleDeleteProperty = async (propertyId: string) => {
+     if (!landlordId) {
+    console.error("Cannot update property: landlord ID is missing.");
+    return;
+  }
     try {
       await deletePropertyFromCloud(propertyId);
     } catch (error) {
@@ -283,132 +302,137 @@ console.log("user signed in");
     );
   }
 
-  if (!userProfile) {
+if (!userProfile) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+      <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
+        <h1 className="mb-2 text-2xl font-bold">
+          Complete your profile
+        </h1>
+
+        <p className="mb-6 text-gray-600">
+          Enter your name and email to finish setting up your account.
+        </p>
+
+        <UserProfileForm
+          onRegisterUserProfile={handleSaveUserProfile}
+          initialEmail={user.email ?? ""}
+          initialName={user.displayName ?? ""}
+        />
+
+        {profileSaving && (
+          <p className="mt-4 text-sm text-gray-500">
+            Saving your profile...
+          </p>
+        )}
+      </section>
+    </main>
+  );
+}
+
+
+if (userProfile.role === "landlord") {
+  return (
+    <LandlordDashboard
+  properties={properties}
+  tenants={tenants}
+  userName={userProfile.name}
+  onSignOut={handleSignOut}
+  onAddTenant={handleAddTenant}
+  onDeleteTenant={handleDeleteTenant}
+  onUpdateTenant={handleUpdateTenant}
+  onAddProperty={handleAddProperty}
+  onDeleteProperty={handleDeleteProperty}
+  onUpdateProperty={handleUpdateProperty}
+/>
+  );
+}
+
+
+if (userProfile.role === "caretaker") {
+  if (!userProfile.landlordId) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-        <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
-          <h1 className="mb-2 text-2xl font-bold">
-            Complete your profile
+        <section className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-lg">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Awaiting workspace access
           </h1>
 
-          <p className="mb-6 text-gray-600">
-            Enter your name and email to finish setting up your account.
+          <p className="mt-3 text-gray-600">
+            Your caretaker account has not yet been connected to a landlord.
           </p>
 
-          <UserProfileForm
-            onRegisterUserProfile={handleSaveUserProfile}
-            initialEmail={user.email ?? ""}
-            initialName={user.displayName ?? ""}
-
-          />
-
-          {profileSaving && (
-            <p className="mt-4 text-sm text-gray-500">
-              Saving your profile...
-            </p>
-          )}
+          <button
+            onClick={handleSignOut}
+            className="mt-6 rounded-lg bg-red-600 px-5 py-2 text-white hover:bg-red-700"
+          >
+            Sign out
+          </button>
         </section>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-4 md:p-8">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold">
-            Property Management System
-          </h1>
-
-          <p className="mt-2 text-gray-600">
-            Welcome, {userProfile.name}
-          </p>
-
-          <p className="text-sm text-gray-500">
-            {userProfile.email}
-          </p>
-
-          <p className="mt-1 text-sm text-gray-500">
-            Role: {userProfile.role ?? "Awaiting role assignment"}
-          </p>
-        </header>
-
-        
-        <section className="mb-8 rounded-2xl bg-white p-6 shadow-md">
-          <h2 className="mb-2 text-2xl font-bold">
-            Apply for landlord access
-          </h2>
-
-          <p className="mb-6 text-gray-600">
-            Submit your property details and ownership document for review.
-          </p>
-
-          <LandlordApplicationFlow />
-        </section>
-
-        
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <section className="rounded-2xl bg-white p-6 shadow-md">
-            <h2 className="mb-2 text-2xl font-bold">
-              Tenant Management
-            </h2>
-
-            <p className="mb-6 text-gray-600">
-              Track tenant registration and payment status.
-            </p>
-
-            <TenantForm onAddTenant={handleAddTenant} />
-
-            <div className="mt-6 flex flex-col gap-4">
-              {tenants.map((tenant) => (
-                <TenantCard
-                  key={tenant.id}
-                  tenant={tenant}
-                  onDelete={handleDeleteTenant}
-                  onUpdate={handleUpdateTenant}
-                />
-              ))}
-
-              {tenants.length === 0 && (
-                <p className="text-gray-500">
-                  No tenants registered yet.
-                </p>
-              )}
-            </div>
-          </section>
-
-          <section className="rounded-2xl bg-white p-6 shadow-md">
-            <h2 className="mb-2 text-2xl font-bold">
-              Property Management
-            </h2>
-
-            <p className="mb-6 text-gray-600">
-              Register properties and monitor occupancy.
-            </p>
-
-            <PropertyForm onAddProperty={handleAddProperty} />
-
-            <div className="mt-6 flex flex-col gap-4">
-              {properties.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                  onDelete={handleDeleteProperty}
-                  onUpdate={handleUpdateProperty}
-                />
-              ))}
-
-              {properties.length === 0 && (
-                <p className="text-gray-500">
-                  No properties registered yet.
-                </p>
-              )}
-            </div>
-          </section>
-        </div>
-      </div>
+    <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+      <section className="max-w-md rounded-xl bg-white p-8 text-center shadow">
+        <h1 className="text-xl font-bold">
+          Caretaker dashboard coming next
+        </h1>
+        <p className="mt-2 text-gray-600">
+          Your workspace is connected. We're setting up your dashboard.
+        </p>
+        <button
+          onClick={handleSignOut}
+          className="mt-5 rounded-lg bg-red-600 px-5 py-2 text-white"
+        >
+          Sign out
+        </button>
+      </section>
     </main>
   );
 }
 
+
+return (
+  <main className="min-h-screen bg-gray-100 p-4 md:p-8">
+    <div className="mx-auto max-w-3xl">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold">
+          Welcome, {userProfile.name}
+        </h1>
+
+        <p className="mt-2 text-gray-600">
+          {userProfile.email}
+        </p>
+
+        <p className="mt-1 text-sm text-gray-500">
+          Role: Awaiting approval
+        </p>
+      </header>
+
+      <section className="rounded-2xl bg-white p-6 shadow-md">
+        <h2 className="mb-2 text-2xl font-bold">
+          Apply for landlord access
+        </h2>
+
+        <p className="mb-6 text-gray-600">
+          Submit your property details and ownership document for review.
+        </p>
+
+        <LandlordApplicationFlow />
+      </section>
+
+      <button
+        onClick={handleSignOut}
+        className="mt-6 rounded-lg bg-red-600 px-5 py-2 text-white hover:bg-red-700"
+      >
+        Sign out
+      </button>
+    </div>
+  </main>
+);
+}
+
 export default App;
+
