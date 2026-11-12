@@ -109,6 +109,8 @@ export function LandlordDashboard({
             <PropertiesPage
               properties={properties}
               onAddProperty={onAddProperty}
+              onDeleteProperty={onDeleteProperty}
+              onUpdateProperty={onUpdateProperty}
             />
           )}
 
