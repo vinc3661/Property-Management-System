@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import type { Property } from "../../types/Property";
 import type { Tenant } from "../../types/Tenant";
-
+import {TenantsPage} from "../tenantPage";
 import { PropertiesPage } from "../propertiesPage";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardHeader } from "./DashboardHeader";
@@ -114,7 +114,15 @@ export function LandlordDashboard({
             />
           )}
 
-          
+          {activePage === "tenants" && (
+            <TenantsPage
+              tenants={tenants}
+              onAddTenant={onAddTenant}
+              onDeleteTenant={onDeleteTenant}
+              onUpdateTenant={onUpdateTenant}
+            />
+          )}
+
           {activePage !== "overview" &&
             activePage !== "properties" && (
               <div className="rounded-xl border border-gray-200 bg-white p-8">
