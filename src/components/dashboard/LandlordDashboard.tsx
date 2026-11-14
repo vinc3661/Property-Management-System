@@ -8,7 +8,7 @@ import type { Payment } from "../../types/Payment";
 import { TenantsPage } from "../tenantPage";
 import { PropertiesPage } from "../propertiesPage";
 import { PaymentsPage } from "../PaymentsPage";
-
+import {CaretakersPage} from "../CaretakersPage";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardHeader } from "./DashboardHeader";
 import { OverviewCards } from "./OverviewCards";
@@ -67,6 +67,8 @@ export function LandlordDashboard({
   onUpdateProperty,
   onRecordPayment,
   onUpdatePaymentStatus,
+  
+
 }: LandlordDashboardProps) {
   const [activePage, setActivePage] = useState("overview");
 
@@ -154,7 +156,9 @@ export function LandlordDashboard({
           )}
 
           {activePage === "caretakers" && (
-            <PlaceholderPage title="Caretakers" />
+            <CaretakersPage
+            
+            />
           )}
 
           {activePage === "maintenance" && (
