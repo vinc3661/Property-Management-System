@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Property } from "../../types/Property";
 import type { Tenant } from "../../types/Tenant";
 import type { Payment } from "../../types/Payment";
-
+import { PropertyAIAssistant } from "../PropertyAIAssistant";
 import { TenantsPage } from "../tenantPage";
 import { PropertiesPage } from "../propertiesPage";
 import { PaymentsPage } from "../PaymentsPage";
@@ -120,12 +120,17 @@ export function LandlordDashboard({
 
         <div className="space-y-8 p-8">
           {activePage === "overview" && (
-            <OverviewCards
-              properties={properties}
-              tenants={tenants}
-              payments={payments}
-            />
-          )}
+            
+  <>
+    <OverviewCards
+      properties={properties}
+      tenants={tenants}
+      payments={payments}
+    />
+
+    <PropertyAIAssistant />
+  </>
+)}
 
           {activePage === "properties" && (
             <PropertiesPage
@@ -154,11 +159,9 @@ export function LandlordDashboard({
             />
           )}
 
-          {activePage === "caretakers" && (
-            <CaretakersPage
-            
-            />
-          )}
+          {activePage === "caretakers" && role === "landlord" && (
+  <CaretakersPage />
+)}
 
          
         </div>
