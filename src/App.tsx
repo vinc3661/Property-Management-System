@@ -12,7 +12,7 @@ import type { Tenant } from "./types/Tenant";
 import type { Property } from "./types/Property";
 import type { Payment } from "./types/Payment";
 import type { UserProfile } from "./types/UserProfile";
-
+import { AcceptanceCode } from "./components/acceptanceCode";
 import {
   addTenantToCloud,
   subscribeToTenants,
@@ -62,7 +62,8 @@ function App() {
   const [profileSaving, setProfileSaving] = useState(false);
 
   const isAdmin = user?.uid === import.meta.env.VITE_ADMIN_UID;
-
+const invitationToken =
+  window.location.pathname.match(/^\/invite\/([^/]+)\/?$/)?.[1] ?? null;
   
   const landlordId =
     userProfile?.role === "landlord"
@@ -395,7 +396,11 @@ function App() {
     );
   }
 
-  
+  if (invitationToken) {
+  return (
+    <AcceptanceCode invitationToken={invitationToken} />
+  );
+}
   if (userProfile.role === "landlord") {
     return (
       <LandlordDashboard

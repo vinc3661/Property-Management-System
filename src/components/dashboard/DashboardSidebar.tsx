@@ -3,6 +3,7 @@ type DashboardSidebarProps = {
   activePage: string;
   onNavigate: (page: string) => void;
   onSignOut: () => void;
+  role: "landlord" | "caretaker";
 };
 
 const navigationItems = [
@@ -10,15 +11,20 @@ const navigationItems = [
   { id: "properties", label: "Properties", icon: "▦" },
   { id: "tenants", label: "Tenants", icon: "♙" },
   { id: "payments", label: "Payments", icon: "💳" },
-  { id: "caretakers", label: "Caretakers", icon: "♧" },
-  { id: "maintenance", label: "Maintenance", icon: "⚒" },
+  { id: "caretakers", label: "Caretakers", icon: "♧", landlordOnly: true },
+  
 ];
 
 export function DashboardSidebar({
   activePage,
   onNavigate,
   onSignOut,
+  role,
 }: DashboardSidebarProps) {
+  const visibleNavigationItems = navigationItems.filter(
+    (item) => !item.landlordOnly || role === "landlord"
+  );
+
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white px-5 py-6">
       <div className="mb-10">
@@ -35,7 +41,7 @@ export function DashboardSidebar({
       </p>
 
       <nav className="flex-1 space-y-2">
-        {navigationItems.map((item) => (
+        {visibleNavigationItems.map((item) => (
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
@@ -56,7 +62,7 @@ export function DashboardSidebar({
           onClick={onSignOut}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-red-600 transition hover:bg-red-50"
         >
-          <span className="text-lg">↪</span>
+          <span className="text-lg"></span>
           Sign out
         </button>
       </div>

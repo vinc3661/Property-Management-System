@@ -17,7 +17,7 @@ type LandlordDashboardProps = {
   properties: Property[];
   tenants: Tenant[];
   payments: Payment[];
-
+ role: "landlord" | "caretaker";
   userName: string;
   onSignOut: () => void;
 
@@ -67,6 +67,7 @@ export function LandlordDashboard({
   onUpdateProperty,
   onRecordPayment,
   onUpdatePaymentStatus,
+  role,
   
 
 }: LandlordDashboardProps) {
@@ -96,10 +97,7 @@ export function LandlordDashboard({
       title: "Caretakers",
       description: "Manage your property caretakers.",
     },
-    maintenance: {
-      title: "Maintenance",
-      description: "Track and manage maintenance issues.",
-    },
+    
   };
 
   const currentPage = pageDetails[activePage];
@@ -110,6 +108,7 @@ export function LandlordDashboard({
         activePage={activePage}
         onNavigate={setActivePage}
         onSignOut={onSignOut}
+        role={role}
       />
 
       <main className="min-w-0 flex-1">
@@ -161,25 +160,9 @@ export function LandlordDashboard({
             />
           )}
 
-          {activePage === "maintenance" && (
-            <PlaceholderPage title="Maintenance" />
-          )}
+         
         </div>
       </main>
-    </div>
-  );
-}
-
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-8">
-      <h3 className="text-lg font-semibold text-gray-900">
-        {title}
-      </h3>
-
-      <p className="mt-2 text-sm text-gray-500">
-        This section is coming together. We'll implement its functionality next.
-      </p>
     </div>
   );
 }
