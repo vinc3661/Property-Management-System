@@ -161,7 +161,7 @@ export function PaymentsPage({
 
   return (
     <div className="space-y-8">
-      {/* Payment summary */}
+      
       <section className="grid gap-5 sm:grid-cols-3">
         <SummaryCard
           label="Total Collected"
@@ -182,7 +182,7 @@ export function PaymentsPage({
         />
       </section>
 
-      {/* Record payment form */}
+      
       <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         <div className="mb-6">
           <h2 className="text-lg font-bold text-gray-900">

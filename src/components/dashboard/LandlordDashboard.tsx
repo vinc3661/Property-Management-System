@@ -7,6 +7,7 @@ import type { Payment } from "../../types/Payment";
 
 import { TenantsPage } from "../tenantPage";
 import { PropertiesPage } from "../propertiesPage";
+import { PaymentsPage } from "../PaymentsPage";
 
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardHeader } from "./DashboardHeader";
@@ -64,6 +65,8 @@ export function LandlordDashboard({
   onAddProperty,
   onDeleteProperty,
   onUpdateProperty,
+  onRecordPayment,
+  onUpdatePaymentStatus,
 }: LandlordDashboardProps) {
   const [activePage, setActivePage] = useState("overview");
 
@@ -82,6 +85,10 @@ export function LandlordDashboard({
     tenants: {
       title: "Tenants",
       description: "Manage your registered tenants.",
+    },
+    payments: {
+      title: "Payments",
+      description: "Record and manage tenant rent payments.",
     },
     caretakers: {
       title: "Caretakers",
@@ -137,22 +144,38 @@ export function LandlordDashboard({
             />
           )}
 
-          {activePage !== "overview" &&
-            activePage !== "properties" &&
-            activePage !== "tenants" && (
-              <div className="rounded-xl border border-gray-200 bg-white p-8">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {currentPage.title}
-                </h3>
+          {activePage === "payments" && (
+            <PaymentsPage
+              tenants={tenants}
+              payments={payments}
+              onRecordPayment={onRecordPayment}
+              onUpdatePaymentStatus={onUpdatePaymentStatus}
+            />
+          )}
 
-                <p className="mt-2 text-sm text-gray-500">
-                  This section is coming together. We'll implement its
-                  functionality next.
-                </p>
-              </div>
-            )}
+          {activePage === "caretakers" && (
+            <PlaceholderPage title="Caretakers" />
+          )}
+
+          {activePage === "maintenance" && (
+            <PlaceholderPage title="Maintenance" />
+          )}
         </div>
       </main>
+    </div>
+  );
+}
+
+function PlaceholderPage({ title }: { title: string }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-8">
+      <h3 className="text-lg font-semibold text-gray-900">
+        {title}
+      </h3>
+
+      <p className="mt-2 text-sm text-gray-500">
+        This section is coming together. We'll implement its functionality next.
+      </p>
     </div>
   );
 }
