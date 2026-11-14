@@ -1,10 +1,12 @@
 
 import type { Property } from "../../types/Property";
 import type { Tenant } from "../../types/Tenant";
+import type { Payment } from "../../types/Payment";
 
 type OverviewCardsProps = {
   properties: Property[];
   tenants: Tenant[];
+  payments: Payment[];
 };
 
 type RingChartProps = {
@@ -68,6 +70,7 @@ function RingChart({
 export function OverviewCards({
   properties,
   tenants,
+  payments,
 }: OverviewCardsProps) {
   const totalProperties = properties.length;
 
@@ -124,15 +127,63 @@ export function OverviewCards({
     },
   ];
 
+  
+  const currentDate = new Date();
+
+  const monthlyCollections = Array.from({ length: 6 }, (_, index) => {
+    const monthDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() - (5 - index),
+      1
+    );
+
+    const year = monthDate.getFullYear();
+    const month = String(monthDate.getMonth() + 1).padStart(2, "0");
+    const monthKey = `${year}-${month}`;
+
+    const total = payments
+      .filter((payment) => {
+        return (
+          payment.status === "confirmed" &&
+          payment.paymentDate?.slice(0, 7) === monthKey
+        );
+      })
+      .reduce((sum, payment) => sum + payment.amount, 0);
+
+    return {
+      key: monthKey,
+      label: monthDate.toLocaleDateString("en-KE", {
+        month: "short",
+      }),
+      year,
+      total,
+    };
+  });
+
+  const highestCollection = Math.max(
+    ...monthlyCollections.map((month) => month.total),
+    0
+  );
+
+  const totalCollected = monthlyCollections.reduce(
+    (sum, month) => sum + month.total,
+    0
+  );
+
+  const currencyFormatter = new Intl.NumberFormat("en-KE", {
+    maximumFractionDigits: 0,
+  });
+
+  const formatCurrency = (amount: number) =>
+    `KSh ${currencyFormatter.format(amount)}`;
+
   return (
     <div className="space-y-8">
-    
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Total Properties"
           value={totalProperties}
           description="Registered properties"
-          
         />
 
         <StatCard
@@ -146,7 +197,6 @@ export function OverviewCards({
           label="Vacant Units"
           value={vacantProperties}
           description="Available properties"
-          
         />
 
         <StatCard
@@ -157,7 +207,6 @@ export function OverviewCards({
         />
       </section>
 
-      
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
           <div className="mb-6">
@@ -205,6 +254,90 @@ export function OverviewCards({
             <Legend color="bg-rose-500" label="Unpaid" />
           </div>
         </div>
+      </section>
+
+      
+      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">
+              Monthly Rent Collection
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Confirmed payments received over the last six months.
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium text-gray-500">
+              Total collected
+            </p>
+            <p className="mt-1 text-xl font-bold text-gray-900">
+              {formatCurrency(totalCollected)}
+            </p>
+          </div>
+        </div>
+
+        {totalCollected === 0 ? (
+          <div className="flex min-h-52 flex-col items-center justify-center text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+              <span className="text-xl">📊</span>
+            </div>
+
+            <p className="font-semibold text-gray-800">
+              No confirmed collections yet
+            </p>
+
+            <p className="mt-1 max-w-sm text-sm text-gray-500">
+              Once you record and confirm rent payments, your monthly
+              collection trend will appear here.
+            </p>
+          </div>
+        ) : (
+          <div>
+            <div className="mb-3 flex items-center justify-between text-xs text-gray-400">
+              <span>Collection amount</span>
+              <span>{formatCurrency(highestCollection)} maximum</span>
+            </div>
+
+            <div className="flex h-56 items-end gap-3 border-b border-gray-100 pb-3 sm:gap-5">
+              {monthlyCollections.map((month) => {
+                const barHeight =
+                  highestCollection === 0
+                    ? 0
+                    : (month.total / highestCollection) * 100;
+
+                return (
+                  <div
+                    key={month.key}
+                    className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+                  >
+                    <span className="mb-2 min-h-4 whitespace-nowrap text-center text-[10px] font-medium text-gray-500 sm:text-xs">
+                      {month.total > 0
+                        ? currencyFormatter.format(month.total)
+                        : ""}
+                    </span>
+
+                    <div className="flex h-full w-full items-end justify-center">
+                      <div
+                        title={`${month.label} ${month.year}: ${formatCurrency(month.total)}`}
+                        className="w-full max-w-12 rounded-t-lg bg-blue-500 transition-all duration-700 hover:bg-blue-600"
+                        style={{
+                          height: `${barHeight}%`,
+                          minHeight: month.total > 0 ? "5px" : "0px",
+                        }}
+                      />
+                    </div>
+
+                    <span className="mt-3 text-xs font-medium text-gray-500">
+                      {month.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       

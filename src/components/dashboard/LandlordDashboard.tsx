@@ -3,8 +3,11 @@ import { useState } from "react";
 
 import type { Property } from "../../types/Property";
 import type { Tenant } from "../../types/Tenant";
-import {TenantsPage} from "../tenantPage";
+import type { Payment } from "../../types/Payment";
+
+import { TenantsPage } from "../tenantPage";
 import { PropertiesPage } from "../propertiesPage";
+
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardHeader } from "./DashboardHeader";
 import { OverviewCards } from "./OverviewCards";
@@ -12,6 +15,8 @@ import { OverviewCards } from "./OverviewCards";
 type LandlordDashboardProps = {
   properties: Property[];
   tenants: Tenant[];
+  payments: Payment[];
+
   userName: string;
   onSignOut: () => void;
 
@@ -36,11 +41,21 @@ type LandlordDashboardProps = {
     id: string,
     updates: Partial<Omit<Property, "id">>
   ) => Promise<void>;
+
+  onRecordPayment: (
+    paymentData: Omit<Payment, "id" | "landlordId" | "createdAt">
+  ) => Promise<void>;
+
+  onUpdatePaymentStatus: (
+    paymentId: string,
+    status: Payment["status"]
+  ) => Promise<void>;
 };
 
 export function LandlordDashboard({
   properties,
   tenants,
+  payments,
   userName,
   onSignOut,
   onAddTenant,
@@ -96,15 +111,14 @@ export function LandlordDashboard({
         />
 
         <div className="space-y-8 p-8">
-          
           {activePage === "overview" && (
             <OverviewCards
               properties={properties}
               tenants={tenants}
+              payments={payments}
             />
           )}
 
-          
           {activePage === "properties" && (
             <PropertiesPage
               properties={properties}
@@ -124,7 +138,8 @@ export function LandlordDashboard({
           )}
 
           {activePage !== "overview" &&
-            activePage !== "properties" && (
+            activePage !== "properties" &&
+            activePage !== "tenants" && (
               <div className="rounded-xl border border-gray-200 bg-white p-8">
                 <h3 className="text-lg font-semibold text-gray-900">
                   {currentPage.title}

@@ -9,6 +9,7 @@ const navigationItems = [
   { id: "overview", label: "Overview", icon: "⌂" },
   { id: "properties", label: "Properties", icon: "▦" },
   { id: "tenants", label: "Tenants", icon: "♙" },
+  { id: "payments", label: "Payments", icon: "💳" },
   { id: "caretakers", label: "Caretakers", icon: "♧" },
   { id: "maintenance", label: "Maintenance", icon: "⚒" },
 ];

@@ -5,7 +5,7 @@ export interface Payment {
   houseNumber: string;
   amount: number;
   paymentDate: string;
-  month: string;
+  rentMonth: string; 
   status: "confirmed" | "pending" | "rejected";
   createdAt: string;
 }

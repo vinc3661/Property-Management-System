@@ -16,8 +16,8 @@ serverTimestamp,
 
   
 } from "firebase/firestore";
-
-import {
+import type { Payment } from "../types/Payment";
+import{
   
 getAuth,} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
@@ -41,6 +41,7 @@ const PROPERTY_COLLECTION = "properties";
 const TENANT_COLLECTION="tenants";
 const PROFILE_COLLECTION="profiles";
 const APPLICATION_COLLECTION="applicants";
+const PAYMENT_COLLECTION = "payments";
 export async function addTenantToCloud(
   landlordId: string,
   tenantData: Omit<Tenant, "id"|'landlordId'>
@@ -325,4 +326,68 @@ console.log("Firebase authentication diagnostics:", {
     submittedAt: serverTimestamp(),
     status: "pending",
   });
+}
+
+export async function recordPayment(
+  landlordId: string,
+  paymentData: Omit<Payment, "id" | "landlordId" | "createdAt">
+): Promise<Payment> {
+  try {
+    const paymentCollection = collection(db, PAYMENT_COLLECTION);
+
+    const payment: Omit<Payment, "id"> = {
+      ...paymentData,
+      landlordId,
+      createdAt: new Date().toISOString(),
+    };
+
+    const docRef = await addDoc(paymentCollection, payment);
+
+    return {
+      ...payment,
+      id: docRef.id,
+    };
+  } catch (error) {
+    console.error("Failed to record payment:", error);
+    throw error;
+  }
+}
+
+export function subscribeToPayments(
+  landlordId: string,
+  onDataUpdate: (payments: Payment[]) => void
+): () => void {
+  const paymentQuery = query(
+    collection(db, PAYMENT_COLLECTION),
+    where("landlordId", "==", landlordId)
+  );
+
+  return onSnapshot(paymentQuery, (snapshot) => {
+    const payments: Payment[] = snapshot.docs.map((paymentDoc) => ({
+      ...(paymentDoc.data() as Omit<Payment, "id">),
+      id: paymentDoc.id,
+    }));
+
+    onDataUpdate(payments);
+  }, (error) => {
+    console.error("Failed to subscribe to payments:", error);
+  });
+}
+
+export async function updatePaymentStatus(
+  paymentId: string,
+  status: Payment["status"]
+): Promise<void> {
+  try {
+    const paymentDocument = doc(
+      db,
+      PAYMENT_COLLECTION,
+      paymentId
+    );
+
+    await updateDoc(paymentDocument, { status });
+  } catch (error) {
+    console.error("Failed to update payment status:", error);
+    throw error;
+  }
 }
