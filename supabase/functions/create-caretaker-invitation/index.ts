@@ -62,7 +62,7 @@ export default {
       }
 
       try {
-        const body = await req.body();
+        const body = await req.json();
 
         const email =
           typeof body.email === "string"

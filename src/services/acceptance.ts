@@ -1,11 +1,18 @@
+
 import { auth } from "./firebase";
 import { supabase } from "./supabase";
 
-export async function acceptCaretakerInvitation(token: string) {
+export async function acceptCaretakerInvitation(
+  invitationToken: string
+) {
   const user = auth.currentUser;
 
   if (!user) {
-    throw new Error("Please sign in first");
+    throw new Error("No signed-in user");
+  }
+
+  if (!invitationToken) {
+    throw new Error("No invitation token provided");
   }
 
   const firebaseIdToken = await user.getIdToken();
@@ -14,7 +21,7 @@ export async function acceptCaretakerInvitation(token: string) {
     "accept-caretaker-invitation",
     {
       body: {
-        token,
+        token: invitationToken,
         firebaseIdToken,
       },
     }
