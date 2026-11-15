@@ -40,3 +40,59 @@ body {
 .PhoneInputCountry {
   margin-right: 8px;
 }
+
+
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
+
+.btn {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: .5em;
+  padding: 13px 20px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #022c22;
+  background: #6ee7b7;
+  border: 0;
+  border-radius: 16px;
+  box-shadow:
+    6px 7px 16px -4px rgba(49, 104, 82, .28),
+    inset -4px -4px 8px rgba(83, 173, 137, .35),
+    inset 4px 4px 8px rgba(255, 255, 255, .45);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 200ms cubic-bezier(.34,1.56,.64,1),
+    box-shadow 200ms ease,
+    filter 200ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+  box-shadow:
+    7px 9px 19px -4px rgba(49, 104, 82, .32),
+    inset -4px -4px 8px rgba(83, 173, 137, .35),
+    inset 4px 4px 8px rgba(255, 255, 255, .5);
+}
+
+.btn:active {
+  transform: translateY(1px) scale(.98);
+}
+
+.btn:focus-visible {
+  outline: 3px solid #059669;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}
