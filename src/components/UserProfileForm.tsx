@@ -129,7 +129,7 @@ export function UserProfileForm({
 
           <button
             type="submit"
-            className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/25 active:scale-[0.99]"
+            className="btn"
           >
             Save profile
             <ArrowRight size={18} />

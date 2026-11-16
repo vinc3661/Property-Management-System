@@ -1,3 +1,4 @@
+
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 import * as jose from "jsr:@panva/jose@6";
@@ -5,12 +6,33 @@ import { createRateLimiter } from "../_shared/rateLimit.ts";
 
 const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
 
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-firebase-id-token",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function jsonResponse(
+  body: unknown,
+  init: ResponseInit = {},
+): Response {
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers: {
+      ...corsHeaders,
+      ...Object.fromEntries(new Headers(init.headers).entries()),
+      "Content-Type": "application/json",
+    },
+  });
+}
+
 const publicJwks = jose.createRemoteJWKSet(
   new URL(
     "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com",
   ),
 );
-
 
 const applicationRateLimit = createRateLimiter({
   limit: 10,
@@ -271,19 +293,42 @@ async function getFirestoreCollection(
 
 export default {
   fetch: withSupabase(
-    { auth: ["publishable"] },
+  {
+    auth: ["publishable"],
+    cors: {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers":
+          "authorization, x-client-info, apikey, content-type, x-firebase-id-token",
+        "Access-Control-Allow-Methods":
+          "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      },
+    },
+  },
+  
     async (req, _ctx) => {
+      
+      if (req.method === "OPTIONS") {
+        return new Response("ok", {
+          status: 200,
+          headers: corsHeaders,
+        });
+      }
+
       if (!projectId) {
-        return Response.json(
+        return jsonResponse(
           { error: "Firebase project ID not configured" },
           { status: 500 },
         );
       }
 
       if (req.method !== "POST") {
-        return Response.json(
+        return jsonResponse(
           { error: "Method not allowed" },
-          { status: 405, headers: { Allow: "POST" } },
+          {
+            status: 405,
+            headers: { Allow: "POST, OPTIONS" },
+          },
         );
       }
 
@@ -292,7 +337,7 @@ export default {
       try {
         requestBody = await req.json();
       } catch {
-        return Response.json(
+        return jsonResponse(
           { error: "Invalid JSON request body" },
           { status: 400 },
         );
@@ -305,7 +350,7 @@ export default {
         typeof requestBody.question !== "string" ||
         !requestBody.question.trim()
       ) {
-        return Response.json(
+        return jsonResponse(
           { error: "A valid question is required" },
           { status: 400 },
         );
@@ -314,13 +359,11 @@ export default {
       const question = requestBody.question.trim();
 
       if (question.length > 1000) {
-        return Response.json(
+        return jsonResponse(
           { error: "Question is too long" },
           { status: 400 },
         );
       }
-
-      
 
       const serviceAccountJson = Deno.env.get(
         "FIREBASE_SERVICE_ACCOUNT_JSON",
@@ -331,7 +374,7 @@ export default {
       if (!serviceAccountJson || !openAIKey) {
         console.error("Required server secrets are missing");
 
-        return Response.json(
+        return jsonResponse(
           { error: "Server configuration is incomplete" },
           { status: 500 },
         );
@@ -340,7 +383,7 @@ export default {
       const token = req.headers.get("x-firebase-id-token");
 
       if (!token) {
-        return Response.json(
+        return jsonResponse(
           { error: "Firebase ID token was not provided" },
           { status: 401 },
         );
@@ -360,7 +403,7 @@ export default {
         );
 
         if (typeof payload.sub !== "string" || !payload.sub) {
-          return Response.json(
+          return jsonResponse(
             { error: "Invalid Firebase user identity" },
             { status: 401 },
           );
@@ -370,7 +413,7 @@ export default {
       } catch (error) {
         console.error("Firebase token verification failed:", error);
 
-        return Response.json(
+        return jsonResponse(
           { error: "Invalid or expired Firebase ID token" },
           { status: 401 },
         );
@@ -391,7 +434,7 @@ export default {
           !profileDocument.fields ||
           typeof profileDocument.fields !== "object"
         ) {
-          return Response.json(
+          return jsonResponse(
             { error: "User profile not found" },
             { status: 403 },
           );
@@ -412,7 +455,7 @@ export default {
             typeof assignedLandlordId !== "string" ||
             !assignedLandlordId
           ) {
-            return Response.json(
+            return jsonResponse(
               { error: "Caretaker is not assigned to a landlord" },
               { status: 403 },
             );
@@ -428,7 +471,7 @@ export default {
             !landlordDocument.fields ||
             typeof landlordDocument.fields !== "object"
           ) {
-            return Response.json(
+            return jsonResponse(
               { error: "Assigned landlord profile not found" },
               { status: 403 },
             );
@@ -439,7 +482,7 @@ export default {
           );
 
           if (landlordProfile.role !== "landlord") {
-            return Response.json(
+            return jsonResponse(
               { error: "Invalid landlord assignment" },
               { status: 403 },
             );
@@ -447,12 +490,11 @@ export default {
 
           verifiedLandlordId = assignedLandlordId;
         } else {
-          return Response.json(
+          return jsonResponse(
             { error: "Unauthorized" },
             { status: 403 },
           );
         }
-
 
         let rateLimitResult: Awaited<
           ReturnType<typeof applicationRateLimit.limit>
@@ -466,7 +508,7 @@ export default {
             error instanceof Error ? error.message : "Unknown error",
           );
 
-          return Response.json(
+          return jsonResponse(
             {
               error: "AI service temporarily unavailable. Please try again later.",
             },
@@ -474,11 +516,10 @@ export default {
           );
         }
 
-        
         if (rateLimitResult.reason === "timeout") {
           console.error("AI rate limiter timed out");
 
-          return Response.json(
+          return jsonResponse(
             {
               error: "AI service temporarily unavailable. Please try again later.",
             },
@@ -486,7 +527,6 @@ export default {
           );
         }
 
-        
         if (!rateLimitResult.success) {
           const retryAfter = Math.max(
             1,
@@ -495,7 +535,7 @@ export default {
             ),
           );
 
-          return Response.json(
+          return jsonResponse(
             {
               error: "You've exceeded your AI assistant request limit. Please try again later.",
               retryAfter,
@@ -509,8 +549,6 @@ export default {
           );
         }
 
-        
-
         const [tenants, properties] = await Promise.all([
           getFirestoreCollection(
             googleAccessToken,
@@ -523,8 +561,6 @@ export default {
             verifiedLandlordId,
           ),
         ]);
-
-        
 
         const propertyData = {
           tenants,
@@ -569,8 +605,6 @@ export default {
           },
         );
 
-      
-
         if (!openAIResponse.ok) {
           const errorDetails = await openAIResponse.text();
 
@@ -580,7 +614,7 @@ export default {
             errorDetails,
           );
 
-          return Response.json(
+          return jsonResponse(
             { error: "AI assistant could not generate a response" },
             { status: 502 },
           );
@@ -624,14 +658,14 @@ export default {
           throw new Error("OpenAI returned an empty answer");
         }
 
-        return Response.json({
+        return jsonResponse({
           success: true,
           answer,
         });
       } catch (error) {
         console.error("Property AI request failed:", error);
 
-        return Response.json(
+        return jsonResponse(
           { error: "Could not process the property AI request" },
           { status: 500 },
         );

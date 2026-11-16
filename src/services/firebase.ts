@@ -333,18 +333,29 @@ export async function recordPayment(
   paymentData: Omit<Payment, "id" | "landlordId" | "createdAt">
 ): Promise<Payment> {
   try {
-    const paymentCollection = collection(db, PAYMENT_COLLECTION);
-
-    const payment: Omit<Payment, "id"> = {
-      ...paymentData,
+    const paymentToSave = {
+      tenantId: paymentData.tenantId,
       landlordId,
-      createdAt: new Date().toISOString(),
+      houseNumber: paymentData.houseNumber,
+      amount: paymentData.amount,
+      paymentDate: paymentData.paymentDate,
+      month: paymentData.rentMonth,
+      status: "pending",
+      createdAt: serverTimestamp(),
     };
 
-    const docRef = await addDoc(paymentCollection, payment);
+    const docRef = await addDoc(
+      collection(db, PAYMENT_COLLECTION),
+      paymentToSave
+    );
+
+    console.log("Payment recorded successfully:", docRef.id);
 
     return {
-      ...payment,
+      ...paymentData,
+      landlordId,
+      status: "pending",
+      createdAt: new Date().toISOString(),
       id: docRef.id,
     };
   } catch (error) {
@@ -352,7 +363,6 @@ export async function recordPayment(
     throw error;
   }
 }
-
 export function subscribeToPayments(
   landlordId: string,
   onDataUpdate: (payments: Payment[]) => void
@@ -362,18 +372,26 @@ export function subscribeToPayments(
     where("landlordId", "==", landlordId)
   );
 
-  return onSnapshot(paymentQuery, (snapshot) => {
-    const payments: Payment[] = snapshot.docs.map((paymentDoc) => ({
-      ...(paymentDoc.data() as Omit<Payment, "id">),
-      id: paymentDoc.id,
-    }));
+  return onSnapshot(
+    paymentQuery,
+    (snapshot) => {
+      const payments: Payment[] = snapshot.docs.map((paymentDoc) => {
+        const data = paymentDoc.data();
 
-    onDataUpdate(payments);
-  }, (error) => {
-    console.error("Failed to subscribe to payments:", error);
-  });
+        return {
+          ...data,
+          rentMonth: data.month,
+          id: paymentDoc.id,
+        } as Payment;
+      });
+
+      onDataUpdate(payments);
+    },
+    (error) => {
+      console.error("Failed to subscribe to payments:", error);
+    }
+  );
 }
-
 export async function updatePaymentStatus(
   paymentId: string,
   status: Payment["status"]
