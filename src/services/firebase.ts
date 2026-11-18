@@ -410,19 +410,29 @@ export async function updatePaymentStatus(
   }
 }
 
-export async function addTenantBulk(landlordId:string,tenantData:Omit<Tenant,"id">):Promise<void>{
-try{
 
-  const tenantCollection=collection(db,TENANT_COLLECTION);
-  const docRef=await writeBatch(tenantCollection,{...landlordId,tenantData});
-  return{
-    ...tenantData
-    id:docRef.id
-    landlordId
+export async function addTenantBulk(
+  landlordId: string,
+  tenants: Omit<Tenant, "id" | "landlordId">[]
+): Promise<void> {
+  try {
+    const tenantCollection = collection(db, TENANT_COLLECTION);
+
+    const batch = writeBatch(db);
+
+    tenants.forEach((tenantData) => {
+      const docRef = doc(tenantCollection);
+
+      batch.set(docRef, {
+        ...tenantData,
+        landlordId
+      });
+    });
+
+    await batch.commit();
+
+  } catch (error) {
+    console.error("Failed to add tenants in bulk:", error);
+    throw error;
   }
-}catch(error){
-  console.error("failed to add tenant bulk");
-}
-
-
 }
