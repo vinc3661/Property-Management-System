@@ -13,7 +13,7 @@ import {
   query,
   where,
 serverTimestamp,  
-
+writeBatch,
   
 } from "firebase/firestore";
 import type { Payment } from "../types/Payment";
@@ -408,4 +408,21 @@ export async function updatePaymentStatus(
     console.error("Failed to update payment status:", error);
     throw error;
   }
+}
+
+export async function addTenantBulk(landlordId:string,tenantData:Omit<Tenant,"id">):Promise<void>{
+try{
+
+  const tenantCollection=collection(db,TENANT_COLLECTION);
+  const docRef=await writeBatch(tenantCollection,{...landlordId,tenantData});
+  return{
+    ...tenantData
+    id:docRef.id
+    landlordId
+  }
+}catch(error){
+  console.error("failed to add tenant bulk");
+}
+
+
 }
