@@ -27,6 +27,7 @@ import {
   recordPayment,
   subscribeToPayments,
   updatePaymentStatus,
+  addTenantBulk,
 } from "./services/firebase";
 
 import {
@@ -233,7 +234,13 @@ const invitationToken =
       throw error;
     }
   };
-
+const handleAddTenantBulk=async (landlordId:string,tenants:Omit<Tenant,"id"|"lanlordId">[])=>{
+  try{
+    await addTenantBulk(landlordId,tenants);
+  }catch(error){
+    console.error("failed to add tenant batch");
+  }
+};
   const handleDeleteTenant = async (tenantId: string) => {
     if (!landlordId) {
       throw new Error("Cannot delete tenant: landlord ID is missing.");
