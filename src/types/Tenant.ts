@@ -4,5 +4,6 @@ export interface Tenant {
   houseNumber: string;      
   paymentStatus: 'paid' | 'pending' | 'unpaid'; 
   leaseStart: string;
-  landlordId: string;       
+  landlordId: string;    
+  propertyId:string;   
 };

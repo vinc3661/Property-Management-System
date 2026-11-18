@@ -12,7 +12,7 @@ type tenantBulkProps={
 };
 
 
-export function tenantBulkForm({onAddTenantBulk}:tenantBulkProps){
+export function TenantBulkForm({onAddTenantBulk}:tenantBulkProps){
  const [name,setName]=useState<string>("");
  const [houseNumber,setHouseNumber]=useState<string>("");
  const [leaseStart,setLeaseStart]=useState<string>("");
