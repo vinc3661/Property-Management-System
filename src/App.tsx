@@ -424,6 +424,7 @@ const handleAddTenantBulk=async (landlordId:string,tenants:Omit<Tenant,"id"|"lan
         onUpdateProperty={handleUpdateProperty}
         onRecordPayment={handleRecordPayment}
         onUpdatePaymentStatus={handleUpdatePaymentStatus}
+        
       />
     );
   }
