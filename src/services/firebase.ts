@@ -24,6 +24,8 @@ import type { Tenant } from "../types/Tenant";
 import type {Property} from "../types/Property";
 import type { UserProfile } from "../types/UserProfile";
 import { supabase } from "./supabase";
+import { db } from "./firebase";
+import type { PropertyTenantImport } from "../types/propertyTenantImport";
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -410,29 +412,63 @@ export async function updatePaymentStatus(
   }
 }
 
-
-export async function addTenantBulk(
+export async function importPropertiesAndTenants(
   landlordId: string,
-  tenants: Omit<Tenant, "id" | "landlordId">[]
+  records: PropertyTenantImport[]
 ): Promise<void> {
-  try {
-    const tenantCollection = collection(db, TENANT_COLLECTION);
 
+  try {
+    
     const batch = writeBatch(db);
 
-    tenants.forEach((tenantData) => {
-      const docRef = doc(tenantCollection);
+    
+    const propertyCollection = collection(db, PROPERTY_COLLECTION);
+    const tenantCollection = collection(db, TENANT_COLLECTION);
 
-      batch.set(docRef, {
-        ...tenantData,
-        landlordId
+    
+    if (records.length === 0) {
+      throw new Error("No records provided for import.");
+    }
+
+    if (records.length * 2 > 500) {
+      throw new Error("Firestore batch limit exceeded. Maximum 250 property-tenant pairs per batch.");
+    }
+
+    
+    for (const record of records) {
+
+      
+      const propertyRef = doc(propertyCollection);
+
+      
+      const tenantRef = doc(tenantCollection);
+
+      
+      batch.set(propertyRef, {
+        houseNumber: record.houseNumber,
+        rentAmount: record.rentAmount,
+        status: "occupied",
+        landlordId,
       });
-    });
 
+      
+      batch.set(tenantRef, {
+        name: record.tenantName,
+        propertyId: propertyRef.id,
+        houseNumber: record.houseNumber,
+        paymentStatus: "pending",
+        leaseStart: record.leaseStart,
+        landlordId,
+      });
+    }
+
+    
     await batch.commit();
 
+    console.log("Properties and tenants imported successfully.");
+
   } catch (error) {
-    console.error("Failed to add tenants in bulk:", error);
+    console.error("Failed to import properties and tenants:", error);
     throw error;
   }
 }
