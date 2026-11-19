@@ -24,7 +24,7 @@ import type { Tenant } from "../types/Tenant";
 import type {Property} from "../types/Property";
 import type { UserProfile } from "../types/UserProfile";
 import { supabase } from "./supabase";
-import { db } from "./firebase";
+
 import type { PropertyTenantImport } from "../types/propertyTenantImport";
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
