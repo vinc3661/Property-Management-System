@@ -12,7 +12,8 @@ import {CaretakersPage} from "../CaretakersPage";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardHeader } from "./DashboardHeader";
 import { OverviewCards } from "./OverviewCards";
-import {  TenantBulkForm, type TenantBulkRow } from "../tenantBulkForm";
+import type { PropertyTenantImport } from "../../types/propertyTenantImport";
+import {TenantBulkForm}from "../tenantBulkForm";
 type LandlordDashboardProps = {
   properties: Property[];
   tenants: Tenant[];
@@ -51,7 +52,9 @@ type LandlordDashboardProps = {
     paymentId: string,
     status: Payment["status"]
   ) => Promise<void>;
-   onAddTenantBulk:(data:TenantBulkRow)=>void;
+   onImportPropertiesAndTenants: (
+  records: PropertyTenantImport[]
+) => Promise<void>;
 };
 
 export function LandlordDashboard({
@@ -69,7 +72,7 @@ export function LandlordDashboard({
   onRecordPayment,
   onUpdatePaymentStatus,
   role,
-  onAddTenantBulk,
+  onImportPropertiesAndTenants
 
 }: LandlordDashboardProps) {
   const [activePage, setActivePage] = useState("overview");
@@ -167,7 +170,7 @@ export function LandlordDashboard({
 
          {activePage==="tenants"&&(
          <TenantBulkForm
-         onAddTenantBulk={onAddTenantBulk}
+         onImportPropertiesAndTenants={onImportPropertiesAndTenants}
          />
           
          )}

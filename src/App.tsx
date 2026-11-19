@@ -429,6 +429,7 @@ const invitationToken =
         onRecordPayment={handleRecordPayment}
         onUpdatePaymentStatus={handleUpdatePaymentStatus}
         onImportPropertiesAndTenants={handleImportPropertiesAndTenants}
+        role={userProfile.role}
       />
     );
   }
