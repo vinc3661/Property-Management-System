@@ -6,13 +6,16 @@ export type TenantBulkRow = {
   houseNumber: string;
   leaseStart: string;
 };
+import type { PropertyTenantImport } from "../types/propertyTenantImport";
 
-type tenantBulkProps={
-    onAddTenantBulk:(data:TenantBulkRow)=>void;
+type TenantBulkProps = {
+  onImportPropertiesAndTenants: (
+    records: PropertyTenantImport[]
+  ) => Promise<void>;
 };
 
 
-export function TenantBulkForm({onAddTenantBulk}:tenantBulkProps){
+export function TenantBulkForm({onAddTenantBulk}:TenantBulkProps){
  const [name,setName]=useState<string>("");
  const [houseNumber,setHouseNumber]=useState<string>("");
  const [leaseStart,setLeaseStart]=useState<string>("");
