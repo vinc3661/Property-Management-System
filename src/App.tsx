@@ -7,7 +7,7 @@ import { AuthCard } from "./components/AuthCard";
 import { UserProfileForm } from "./components/UserProfileForm";
 import { LandlordApplicationFlow } from "./components/Landlord-registration/LandlordApplicationFlow";
 import { AdminDashboard } from "./components/AdminDashboard";
-
+import type { PropertyTenantImport } from "./types/propertyTenantImport";
 import type { Tenant } from "./types/Tenant";
 import type { Property } from "./types/Property";
 import type { Payment } from "./types/Payment";
@@ -27,7 +27,7 @@ import {
   recordPayment,
   subscribeToPayments,
   updatePaymentStatus,
-  addTenantBulk,
+  importPropertiesAndTenants,
 } from "./services/firebase";
 
 import {
@@ -234,25 +234,29 @@ const invitationToken =
       throw error;
     }
   };
-const handleAddTenantBulk=async (landlordId:string,tenants:Omit<Tenant,"id"|"lanlordId">[])=>{
-  try{
-    await addTenantBulk(landlordId,tenants);
-  }catch(error){
-    console.error("failed to add tenant batch");
+
+  const handleDeleteTenant=async(id:string)=>{
+    try{
+      await deleteTenantFromCloud(id);
+    }catch(error){
+      console.error("failed to delete tenant");
+    }
+  }
+  const handleImportPropertiesAndTenants = async (
+  records: PropertyTenantImport[]
+) => {
+  if (!landlordId) {
+    throw new Error("Cannot import: landlord ID is missing.");
+  }
+
+  try {
+    await importPropertiesAndTenants(landlordId, records);
+    console.log("Bulk import completed successfully.");
+  } catch (error) {
+    console.error("Bulk import failed:", error);
+    throw error;
   }
 };
-  const handleDeleteTenant = async (tenantId: string) => {
-    if (!landlordId) {
-      throw new Error("Cannot delete tenant: landlord ID is missing.");
-    }
-
-    try {
-      await deleteTenantFromCloud(tenantId);
-    } catch (error) {
-      console.error("Failed to delete tenant:", error);
-      throw error;
-    }
-  };
 
   const handleUpdateTenant = async (
     id: string,
@@ -424,7 +428,7 @@ const handleAddTenantBulk=async (landlordId:string,tenants:Omit<Tenant,"id"|"lan
         onUpdateProperty={handleUpdateProperty}
         onRecordPayment={handleRecordPayment}
         onUpdatePaymentStatus={handleUpdatePaymentStatus}
-        onAddTenantBulk={handleAddTenantBulk}
+        onImportPropertiesAndTenants={handleImportPropertiesAndTenants}
       />
     );
   }
