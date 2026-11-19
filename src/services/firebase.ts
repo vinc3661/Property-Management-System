@@ -416,31 +416,23 @@ export async function importPropertiesAndTenants(
   landlordId: string,
   records: PropertyTenantImport[]
 ): Promise<void> {
-
   try {
-    
-    const batch = writeBatch(db);
-
-    
-    const propertyCollection = collection(db, PROPERTY_COLLECTION);
-    const tenantCollection = collection(db, TENANT_COLLECTION);
-
-    
     if (records.length === 0) {
       throw new Error("No records provided for import.");
     }
 
-    if (records.length * 2 > 500) {
-      throw new Error("Firestore batch limit exceeded. Maximum 250 property-tenant pairs per batch.");
+    if (records.length * 3 > 500) {
+      throw new Error("Firestore batch limit exceeded.");
     }
 
-    
+    const batch = writeBatch(db);
+
+    const propertyCollection = collection(db, PROPERTY_COLLECTION);
+    const tenantCollection = collection(db, TENANT_COLLECTION);
+    const paymentCollection = collection(db, PAYMENT_COLLECTION);
+
     for (const record of records) {
-
-      
       const propertyRef = doc(propertyCollection);
-
-      
       const tenantRef = doc(tenantCollection);
 
       
@@ -451,24 +443,58 @@ export async function importPropertiesAndTenants(
         landlordId,
       });
 
-      
+    
       batch.set(tenantRef, {
         name: record.tenantName,
         propertyId: propertyRef.id,
         houseNumber: record.houseNumber,
-        paymentStatus: "pending",
+        paymentStatus: record.paymentStatus,
         leaseStart: record.leaseStart,
         landlordId,
       });
+
+      
+      if (record.amountPaid !== undefined) {
+        if (
+          record.paymentStatus !== "paid" ||
+          record.amountPaid <= 0 ||
+          !record.paymentDate ||
+          !record.rentMonth
+        ) {
+          throw new Error(
+            `Invalid payment information for house ${record.houseNumber}.`
+          );
+        }
+
+        const paymentRef = doc(paymentCollection);
+
+        batch.set(paymentRef, {
+          tenantId: tenantRef.id,
+          landlordId,
+          houseNumber: record.houseNumber,
+          amount: record.amountPaid,
+          paymentDate: record.paymentDate,
+          rentMonth: record.rentMonth,
+          status: "confirmed",
+          createdAt: new Date().toISOString(),
+        });
+      }
+      if (
+        record.paymentStatus === "paid" &&
+        record.amountPaid === undefined
+      ) {
+        throw new Error(
+          `Payment details are required for paid tenant in house ${record.houseNumber}.`
+        );
+      }
     }
 
-    
     await batch.commit();
 
-    console.log("Properties and tenants imported successfully.");
+    console.log("Properties, tenants and payments imported successfully.");
 
   } catch (error) {
-    console.error("Failed to import properties and tenants:", error);
+    console.error("Failed to import records:", error);
     throw error;
   }
 }
