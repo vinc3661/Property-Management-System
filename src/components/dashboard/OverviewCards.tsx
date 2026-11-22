@@ -178,7 +178,7 @@ export function OverviewCards({
   return (
     <div className="space-y-8">
 
-      {/* Summary cards */}
+      
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
           label="Occupied Units"
@@ -199,7 +199,7 @@ export function OverviewCards({
         />
       </section>
 
-      {/* Ring charts */}
+      
       <section className="grid gap-6 lg:grid-cols-2">
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
@@ -252,7 +252,7 @@ export function OverviewCards({
         </div>
       </section>
 
-      {/* Monthly rent collection */}
+      
       <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -334,7 +334,7 @@ export function OverviewCards({
         )}
       </section>
 
-      {/* Payment breakdown */}
+      
       <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-7">
           <h3 className="text-lg font-bold text-white">
