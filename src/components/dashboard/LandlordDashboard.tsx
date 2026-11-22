@@ -4,21 +4,24 @@ import { useState } from "react";
 import type { Property } from "../../types/Property";
 import type { Tenant } from "../../types/Tenant";
 import type { Payment } from "../../types/Payment";
+import type { PropertyTenantImport } from "../../types/propertyTenantImport";
+
 import { PropertyAIAssistant } from "../PropertyAIAssistant";
 import { TenantsPage } from "../tenantPage";
 import { PropertiesPage } from "../propertiesPage";
 import { PaymentsPage } from "../PaymentsPage";
-import {CaretakersPage} from "../CaretakersPage";
+import { CaretakersPage } from "../CaretakersPage";
+import { TenantBulkForm } from "../tenantBulkForm";
+
 import { DashboardSidebar } from "./DashboardSidebar";
-import {DashboardHeader} from "./DashboardHeader";
+import { DashboardHeader } from "./DashboardHeader";
 import { OverviewCards } from "./OverviewCards";
-import type { PropertyTenantImport } from "../../types/propertyTenantImport";
-import {TenantBulkForm}from "../tenantBulkForm";
+
 type LandlordDashboardProps = {
   properties: Property[];
   tenants: Tenant[];
   payments: Payment[];
- role: "landlord" | "caretaker";
+  role: "landlord" | "caretaker";
   userName: string;
   onSignOut: () => void;
 
@@ -52,15 +55,17 @@ type LandlordDashboardProps = {
     paymentId: string,
     status: Payment["status"]
   ) => Promise<void>;
-   onImportPropertiesAndTenants: (
-  records: PropertyTenantImport[]
-) => Promise<void>;
+
+  onImportPropertiesAndTenants: (
+    records: PropertyTenantImport[]
+  ) => Promise<void>;
 };
 
 export function LandlordDashboard({
   properties,
   tenants,
   payments,
+  role,
   userName,
   onSignOut,
   onAddTenant,
@@ -71,9 +76,7 @@ export function LandlordDashboard({
   onUpdateProperty,
   onRecordPayment,
   onUpdatePaymentStatus,
-  role,
-  onImportPropertiesAndTenants
-
+  onImportPropertiesAndTenants,
 }: LandlordDashboardProps) {
   const [activePage, setActivePage] = useState("overview");
 
@@ -101,13 +104,12 @@ export function LandlordDashboard({
       title: "Caretakers",
       description: "Manage your property caretakers.",
     },
-    
   };
 
-  const currentPage = pageDetails[activePage];
+  const currentPage = pageDetails[activePage] ?? pageDetails.overview;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-black">
       <DashboardSidebar
         activePage={activePage}
         onNavigate={setActivePage}
@@ -124,17 +126,16 @@ export function LandlordDashboard({
 
         <div className="space-y-8 p-8">
           {activePage === "overview" && (
-            
-  <>
-    <OverviewCards
-      properties={properties}
-      tenants={tenants}
-      payments={payments}
-    />
+            <>
+              <OverviewCards
+                properties={properties}
+                tenants={tenants}
+                payments={payments}
+              />
 
-    <PropertyAIAssistant />
-  </>
-)}
+              <PropertyAIAssistant />
+            </>
+          )}
 
           {activePage === "properties" && (
             <PropertiesPage
@@ -146,13 +147,18 @@ export function LandlordDashboard({
           )}
 
           {activePage === "tenants" && (
-            <TenantsPage
-              tenants={tenants}
-              onAddTenant={onAddTenant}
-              onDeleteTenant={onDeleteTenant}
-              onUpdateTenant={onUpdateTenant}
-              
-            />
+            <div className="space-y-8">
+              <TenantsPage
+                tenants={tenants}
+                onAddTenant={onAddTenant}
+                onDeleteTenant={onDeleteTenant}
+                onUpdateTenant={onUpdateTenant}
+              />
+
+              <TenantBulkForm
+                onImportPropertiesAndTenants={onImportPropertiesAndTenants}
+              />
+            </div>
           )}
 
           {activePage === "payments" && (
@@ -165,15 +171,8 @@ export function LandlordDashboard({
           )}
 
           {activePage === "caretakers" && role === "landlord" && (
-  <CaretakersPage />
-)}
-
-         {activePage==="tenants"&&(
-         <TenantBulkForm
-         onImportPropertiesAndTenants={onImportPropertiesAndTenants}
-         />
-          
-         )}
+            <CaretakersPage />
+          )}
         </div>
       </main>
     </div>
