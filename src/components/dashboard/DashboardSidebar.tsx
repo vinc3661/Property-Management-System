@@ -7,12 +7,11 @@ type DashboardSidebarProps = {
 };
 
 const navigationItems = [
-  { id: "overview", label: "Overview", icon: "⌂" },
-  { id: "properties", label: "Properties", icon: "▦" },
-  { id: "tenants", label: "Tenants", icon: "♙" },
-  { id: "payments", label: "Payments", icon: "💳" },
-  { id: "caretakers", label: "Caretakers", icon: "♧", landlordOnly: true },
-  
+  { id: "overview", label: "Overview" },
+  { id: "properties", label: "Properties" },
+  { id: "tenants", label: "Tenants" },
+  { id: "payments", label: "Payments" },
+  { id: "caretakers", label: "Caretakers", landlordOnly: true },
 ];
 
 export function DashboardSidebar({
@@ -26,17 +25,18 @@ export function DashboardSidebar({
   );
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white px-5 py-6">
+    <aside className="flex h-screen w-64 flex-col border-r border-zinc-800 bg-black px-5 py-6">
       <div className="mb-10">
-        <h1 className="text-xl font-bold text-gray-900">
-          Property<span className="text-blue-600">Hub</span>
+        <h1 className="text-xl font-bold text-white">
+          Property<span className="text-emerald-500">Hub</span>
         </h1>
-        <p className="mt-1 text-xs text-gray-500">
+
+        <p className="mt-1 text-xs text-zinc-500">
           Property Management
         </p>
       </div>
 
-      <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+      <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
         Workspace
       </p>
 
@@ -45,24 +45,22 @@ export function DashboardSidebar({
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
-            className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition ${
+            className={`w-full rounded-lg px-4 py-3 text-left text-sm font-medium transition ${
               activePage === item.id
-                ? "bg-blue-50 text-blue-700"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                ? "border-l-2 border-emerald-500 bg-zinc-900 text-white"
+                : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
             }`}
           >
-            <span className="text-lg">{item.icon}</span>
             {item.label}
           </button>
         ))}
       </nav>
 
-      <div className="border-t border-gray-200 pt-4">
+      <div className="border-t border-zinc-800 pt-4">
         <button
           onClick={onSignOut}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-red-600 transition hover:bg-red-50"
+          className="w-full rounded-lg px-4 py-3 text-left text-sm font-medium text-zinc-400 transition hover:bg-zinc-900 hover:text-red-400"
         >
-          <span className="text-lg"></span>
           Sign out
         </button>
       </div>
