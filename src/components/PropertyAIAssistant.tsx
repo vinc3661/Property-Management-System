@@ -34,16 +34,13 @@ export function PropertyAIAssistant() {
   }
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+    <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
       <div className="mb-5">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="text-xl">✦</span>
-          <h2 className="text-lg font-semibold text-gray-900">
-            Property AI Assistant
-          </h2>
-        </div>
+        <h2 className="text-lg font-semibold text-white">
+          Property AI Assistant
+        </h2>
 
-        <p className="text-sm text-gray-500">
+        <p className="mt-1 text-sm text-zinc-500">
           Ask questions about your properties and tenants.
         </p>
       </div>
@@ -55,18 +52,18 @@ export function PropertyAIAssistant() {
           placeholder="e.g. How many vacant units do I currently have?"
           rows={3}
           maxLength={1000}
-          className="w-full resize-none rounded-xl border border-gray-200 p-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          className="w-full resize-none rounded-xl border border-zinc-700 bg-zinc-900 p-4 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
         />
 
         <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-zinc-500">
             {question.length}/1000 characters
           </p>
 
           <button
             type="submit"
             disabled={!question.trim() || loading}
-            className="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Thinking..." : "Ask AI"}
           </button>
@@ -74,24 +71,27 @@ export function PropertyAIAssistant() {
       </form>
 
       {loading && (
-        <p className="mt-5 text-sm text-gray-500">
+        <p className="mt-5 text-sm text-emerald-400">
           Analysing your property records...
         </p>
       )}
 
       {error && (
-        <div className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">
+        <div
+          role="alert"
+          className="mt-5 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400"
+        >
           {error}
         </div>
       )}
 
       {answer && (
-        <div className="mt-5 rounded-xl bg-gray-50 p-5">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">
+        <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+          <h3 className="mb-2 text-sm font-semibold text-emerald-400">
             AI Response
           </h3>
 
-          <p className="whitespace-pre-wrap text-sm leading-7 text-gray-700">
+          <p className="whitespace-pre-wrap text-sm leading-7 text-zinc-300">
             {answer}
           </p>
         </div>

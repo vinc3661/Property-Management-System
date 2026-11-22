@@ -149,6 +149,7 @@ export function LandlordDashboard({
           {activePage === "tenants" && (
             <div className="space-y-8">
               <TenantsPage
+                properties={properties}
                 tenants={tenants}
                 onAddTenant={onAddTenant}
                 onDeleteTenant={onDeleteTenant}

@@ -18,6 +18,8 @@ export function CaretakersPage() {
   const handleInvite = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (loading) return;
+
     setError("");
     setInvitation(null);
     setCopied(false);
@@ -30,7 +32,7 @@ export function CaretakersPage() {
     try {
       setLoading(true);
 
-      const result = await inviteCaretaker(email);
+      const result = await inviteCaretaker(email.trim());
 
       setInvitation({
         invitationUrl: result.invitationUrl,
@@ -58,28 +60,32 @@ export function CaretakersPage() {
     try {
       await navigator.clipboard.writeText(invitation.invitationUrl);
       setCopied(true);
+      setError("");
     } catch {
-      setError("Could not copy the invitation link. Please copy it manually.");
+      setError(
+        "Could not copy the invitation link. Please copy it manually."
+      );
     }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">
+        <h2 className="text-xl font-semibold text-white">
           Caretakers
         </h2>
-        <p className="mt-1 text-sm text-gray-500">
+
+        <p className="mt-1 text-sm text-zinc-500">
           Invite someone to help manage your properties.
         </p>
       </div>
 
-      <div className="max-w-2xl rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Invite a caretaker
+      <div className="max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <h3 className="text-lg font-semibold text-white">
+          Invite a Caretaker
         </h3>
 
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm leading-6 text-zinc-500">
           Enter their email address. They will receive access through
           the invitation link you share with them.
         </p>
@@ -88,7 +94,7 @@ export function CaretakersPage() {
           <div>
             <label
               htmlFor="caretaker-email"
-              className="mb-2 block text-sm font-medium text-gray-700"
+              className="mb-2 block text-sm font-medium text-zinc-300"
             >
               Caretaker email address
             </label>
@@ -100,12 +106,15 @@ export function CaretakersPage() {
               onChange={(event) => setEmail(event.target.value)}
               placeholder="caretaker@example.com"
               required
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-500"
             />
           </div>
 
           {error && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            <div
+              role="alert"
+              className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+            >
               {error}
             </div>
           )}
@@ -113,7 +122,7 @@ export function CaretakersPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-lg bg-gray-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Creating invitation..." : "Send invitation"}
           </button>
@@ -121,35 +130,35 @@ export function CaretakersPage() {
       </div>
 
       {invitation && (
-        <div className="max-w-2xl rounded-xl border border-green-200 bg-green-50 p-6">
-          <div className="flex items-center gap-2">
-            <span className="text-green-700">✓</span>
-            <h3 className="font-semibold text-green-900">
-              Invitation created successfully
-            </h3>
-          </div>
+        <div className="max-w-2xl rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
+          <h3 className="font-semibold text-emerald-400">
+            Invitation created successfully
+          </h3>
 
-          <p className="mt-3 text-sm text-gray-700">
-            Invitation for <strong>{invitation.invitedEmail}</strong>
+          <p className="mt-3 text-sm text-zinc-300">
+            Invitation for{" "}
+            <strong className="text-white">
+              {invitation.invitedEmail}
+            </strong>
           </p>
 
-          <div className="mt-4 break-all rounded-lg border border-green-200 bg-white p-3 text-sm text-gray-700">
+          <div className="mt-4 break-all rounded-lg border border-zinc-700 bg-zinc-900 p-4 text-sm text-zinc-300">
             {invitation.invitationUrl}
           </div>
 
           <button
             type="button"
             onClick={handleCopyLink}
-            className="mt-3 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
+            className="mt-3 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200"
           >
             {copied ? "Link copied!" : "Copy invitation link"}
           </button>
 
-          <p className="mt-4 text-xs text-gray-600">
+          <p className="mt-4 text-xs text-zinc-500">
             Expires: {new Date(invitation.expiresAt).toLocaleString()}
           </p>
 
-          <p className="mt-2 text-xs text-gray-600">
+          <p className="mt-2 text-xs text-zinc-500">
             Share this link with the caretaker. It expires after 48 hours.
           </p>
         </div>

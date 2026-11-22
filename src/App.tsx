@@ -7,12 +7,14 @@ import { AuthCard } from "./components/AuthCard";
 import { UserProfileForm } from "./components/UserProfileForm";
 import { LandlordApplicationFlow } from "./components/Landlord-registration/LandlordApplicationFlow";
 import { AdminDashboard } from "./components/AdminDashboard";
+import { AcceptanceCode } from "./components/acceptanceCode";
+
 import type { PropertyTenantImport } from "./types/propertyTenantImport";
 import type { Tenant } from "./types/Tenant";
 import type { Property } from "./types/Property";
 import type { Payment } from "./types/Payment";
 import type { UserProfile } from "./types/UserProfile";
-import { AcceptanceCode } from "./components/acceptanceCode";
+
 import {
   addTenantToCloud,
   subscribeToTenants,
@@ -49,12 +51,10 @@ type LoginData = {
 };
 
 function App() {
-  
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
 
-  
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfileState] =
     useState<UserProfile | null>(null);
@@ -63,9 +63,11 @@ function App() {
   const [profileSaving, setProfileSaving] = useState(false);
 
   const isAdmin = user?.uid === import.meta.env.VITE_ADMIN_UID;
-const invitationToken =
-  window.location.pathname.match(/^\/invite\/([^/]+)\/?$/)?.[1] ?? null;
-  
+
+  const invitationToken =
+    window.location.pathname.match(/^\/invite\/([^/]+)\/?$/)?.[1] ??
+    null;
+
   const landlordId =
     userProfile?.role === "landlord"
       ? userProfile.id
@@ -73,7 +75,7 @@ const invitationToken =
         ? userProfile.landlordId
         : null;
 
-  
+ 
   useEffect(() => {
     if (!landlordId) {
       setTenants([]);
@@ -107,7 +109,6 @@ const invitationToken =
     return unsubscribe;
   }, [landlordId]);
 
-  
   useEffect(() => {
     if (!landlordId) {
       setPayments([]);
@@ -124,7 +125,6 @@ const invitationToken =
     return unsubscribe;
   }, [landlordId]);
 
-  
   useEffect(() => {
     const unsubscribe = SubscribeToAuthState(async (firebaseUser) => {
       setUser(firebaseUser);
@@ -149,7 +149,7 @@ const invitationToken =
     return unsubscribe;
   }, []);
 
-  
+ 
   const handleRegisterUser = async (data: RegisterData) => {
     try {
       await registerUser(data.email, data.password);
@@ -158,6 +158,7 @@ const invitationToken =
       throw error;
     }
   };
+
 
   const handleSignUser = async (data: LoginData) => {
     try {
@@ -168,6 +169,7 @@ const invitationToken =
     }
   };
 
+ 
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
@@ -178,6 +180,7 @@ const invitationToken =
     }
   };
 
+
   const handleSignOut = async () => {
     try {
       await signOutAccount();
@@ -187,7 +190,6 @@ const invitationToken =
     }
   };
 
-  
   const handleSaveUserProfile = async (
     data: Pick<UserProfile, "email" | "name">
   ) => {
@@ -219,7 +221,7 @@ const invitationToken =
     }
   };
 
-
+  
   const handleAddTenant = async (
     tenantData: Omit<Tenant, "id" | "landlordId">
   ) => {
@@ -235,28 +237,37 @@ const invitationToken =
     }
   };
 
-  const handleDeleteTenant=async(id:string)=>{
-    try{
-      await deleteTenantFromCloud(id);
-    }catch(error){
-      console.error("failed to delete tenant");
+ 
+  const handleDeleteTenant = async (id: string) => {
+    if (!landlordId) {
+      throw new Error("Cannot delete tenant: landlord ID is missing.");
     }
-  }
-  const handleImportPropertiesAndTenants = async (
-  records: PropertyTenantImport[]
-) => {
-  if (!landlordId) {
-    throw new Error("Cannot import: landlord ID is missing.");
-  }
 
-  try {
-    await importPropertiesAndTenants(landlordId, records);
-    console.log("Bulk import completed successfully.");
-  } catch (error) {
-    console.error("Bulk import failed:", error);
-    throw error;
-  }
-};
+    try {
+      await deleteTenantFromCloud(id);
+    } catch (error) {
+      console.error("Failed to delete tenant:", error);
+      throw error;
+    }
+  };
+
+ 
+  const handleImportPropertiesAndTenants = async (
+    records: PropertyTenantImport[]
+  ) => {
+    if (!landlordId) {
+      throw new Error("Cannot import: landlord ID is missing.");
+    }
+
+    try {
+      await importPropertiesAndTenants(landlordId, records);
+      console.log("Bulk import completed successfully.");
+    } catch (error) {
+      console.error("Bulk import failed:", error);
+      throw error;
+    }
+  };
+
 
   const handleUpdateTenant = async (
     id: string,
@@ -290,6 +301,7 @@ const invitationToken =
     }
   };
 
+  
   const handleDeleteProperty = async (propertyId: string) => {
     if (!landlordId) {
       throw new Error("Cannot delete property: landlord ID is missing.");
@@ -303,6 +315,7 @@ const invitationToken =
     }
   };
 
+  
   const handleUpdateProperty = async (
     id: string,
     updates: Partial<Omit<Property, "id" | "landlordId">>
@@ -319,7 +332,7 @@ const invitationToken =
     }
   };
 
-  
+ 
   const handleRecordPayment = async (
     paymentData: Omit<Payment, "id" | "landlordId" | "createdAt">
   ) => {
@@ -336,6 +349,7 @@ const invitationToken =
     }
   };
 
+  
   const handleUpdatePaymentStatus = async (
     paymentId: string,
     status: Payment["status"]
@@ -362,7 +376,7 @@ const invitationToken =
     );
   }
 
-
+  
   if (!user) {
     return (
       <AuthCard
@@ -379,6 +393,11 @@ const invitationToken =
   }
 
   
+  if (invitationToken) {
+    return <AcceptanceCode invitationToken={invitationToken} />;
+  }
+
+ 
   if (!userProfile) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
@@ -407,11 +426,7 @@ const invitationToken =
     );
   }
 
-  if (invitationToken) {
-  return (
-    <AcceptanceCode invitationToken={invitationToken} />
-  );
-}
+  
   if (userProfile.role === "landlord") {
     return (
       <LandlordDashboard
@@ -434,7 +449,7 @@ const invitationToken =
     );
   }
 
-  
+
   if (userProfile.role === "caretaker") {
     if (!userProfile.landlordId) {
       return (

@@ -19,13 +19,22 @@ type PaymentsPageProps = {
   ) => Promise<void>;
 };
 
+function getLocalDate() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 export function PaymentsPage({
   tenants,
   payments,
   onRecordPayment,
   onUpdatePaymentStatus,
 }: PaymentsPageProps) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalDate();
   const currentMonth = today.slice(0, 7);
 
   const [tenantId, setTenantId] = useState("");
@@ -130,6 +139,8 @@ export function PaymentsPage({
     paymentId: string,
     newStatus: Payment["status"]
   ) => {
+    if (updatingPaymentId) return;
+
     setError("");
     setSuccess("");
     setUpdatingPaymentId(paymentId);
@@ -154,14 +165,13 @@ export function PaymentsPage({
   };
 
   const statusStyles = {
-    confirmed: "bg-emerald-50 text-emerald-700",
-    pending: "bg-amber-50 text-amber-700",
-    rejected: "bg-rose-50 text-rose-700",
+    confirmed: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+    pending: "border-zinc-700 bg-zinc-800 text-zinc-300",
+    rejected: "border-red-500/20 bg-red-500/10 text-red-400",
   };
 
   return (
     <div className="space-y-8">
-      
       <section className="grid gap-5 sm:grid-cols-3">
         <SummaryCard
           label="Total Collected"
@@ -182,26 +192,26 @@ export function PaymentsPage({
         />
       </section>
 
-      
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-6">
-          <h2 className="text-lg font-bold text-gray-900">
+          <h2 className="text-lg font-bold text-white">
             Record a Payment
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+
+          <p className="mt-1 text-sm text-zinc-400">
             Record a full payment or an instalment from a tenant.
           </p>
         </div>
 
         {tenants.length === 0 ? (
-          <p className="rounded-lg bg-amber-50 p-4 text-sm text-amber-700">
+          <p className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 text-sm text-zinc-400">
             You need to register a tenant before recording a payment.
           </p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+                <label className="mb-2 block text-sm font-medium text-zinc-300">
                   Tenant
                 </label>
 
@@ -209,7 +219,7 @@ export function PaymentsPage({
                   value={tenantId}
                   onChange={(event) => setTenantId(event.target.value)}
                   required
-                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-500"
                 >
                   <option value="">Select a tenant</option>
                   {tenants.map((tenant) => (
@@ -221,7 +231,7 @@ export function PaymentsPage({
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+                <label className="mb-2 block text-sm font-medium text-zinc-300">
                   Amount (KSh)
                 </label>
 
@@ -233,12 +243,12 @@ export function PaymentsPage({
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
                   placeholder="e.g. 10000"
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+                <label className="mb-2 block text-sm font-medium text-zinc-300">
                   Payment Date
                 </label>
 
@@ -247,12 +257,12 @@ export function PaymentsPage({
                   required
                   value={paymentDate}
                   onChange={(event) => setPaymentDate(event.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+                <label className="mb-2 block text-sm font-medium text-zinc-300">
                   Rent Month
                 </label>
 
@@ -261,12 +271,12 @@ export function PaymentsPage({
                   required
                   value={rentMonth}
                   onChange={(event) => setRentMonth(event.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+                <label className="mb-2 block text-sm font-medium text-zinc-300">
                   Payment Status
                 </label>
 
@@ -275,7 +285,7 @@ export function PaymentsPage({
                   onChange={(event) =>
                     setStatus(event.target.value as Payment["status"])
                   }
-                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500"
                 >
                   <option value="pending">Pending verification</option>
                   <option value="confirmed">Confirmed</option>
@@ -285,13 +295,13 @@ export function PaymentsPage({
             </div>
 
             {error && (
-              <p className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
+              <p role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
                 {error}
               </p>
             )}
 
             {success && (
-              <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
+              <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-400">
                 {success}
               </p>
             )}
@@ -299,7 +309,7 @@ export function PaymentsPage({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? "Recording..." : "Record Payment"}
             </button>
@@ -307,30 +317,37 @@ export function PaymentsPage({
         )}
       </section>
 
-      {/* Payment history */}
-      <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <div className="border-b border-gray-100 p-6">
-          <h2 className="text-lg font-bold text-gray-900">
+      <section className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
+        <div className="border-b border-zinc-800 p-6">
+          <h2 className="text-lg font-bold text-white">
             Payment History
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+
+          <p className="mt-1 text-sm text-zinc-400">
             Review transactions and verify pending payments.
           </p>
         </div>
 
+        {error && tenants.length === 0 && (
+          <p className="m-6 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+            {error}
+          </p>
+        )}
+
         {sortedPayments.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="font-semibold text-gray-800">
+            <p className="font-semibold text-white">
               No payments recorded yet
             </p>
-            <p className="mt-1 text-sm text-gray-500">
+
+            <p className="mt-1 text-sm text-zinc-400">
               Recorded transactions will appear here.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[750px] text-left text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+              <thead className="bg-zinc-900 text-xs uppercase tracking-wide text-zinc-500">
                 <tr>
                   <th className="px-6 py-4 font-semibold">Tenant</th>
                   <th className="px-6 py-4 font-semibold">House</th>
@@ -342,32 +359,32 @@ export function PaymentsPage({
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-zinc-800">
                 {sortedPayments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">
+                  <tr key={payment.id} className="transition hover:bg-zinc-900/70">
+                    <td className="px-6 py-4 font-medium text-white">
                       {getTenantName(payment.tenantId)}
                     </td>
 
-                    <td className="px-6 py-4 text-gray-600">
+                    <td className="px-6 py-4 text-zinc-400">
                       {payment.houseNumber}
                     </td>
 
-                    <td className="px-6 py-4 font-semibold text-gray-900">
+                    <td className="px-6 py-4 font-semibold text-white">
                       {formatCurrency(payment.amount)}
                     </td>
 
-                    <td className="px-6 py-4 text-gray-600">
+                    <td className="px-6 py-4 text-zinc-400">
                       {payment.paymentDate}
                     </td>
 
-                    <td className="px-6 py-4 text-gray-600">
+                    <td className="px-6 py-4 text-zinc-400">
                       {payment.rentMonth}
                     </td>
 
                     <td className="px-6 py-4">
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusStyles[payment.status]}`}
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize ${statusStyles[payment.status]}`}
                       >
                         {payment.status}
                       </span>
@@ -377,27 +394,27 @@ export function PaymentsPage({
                       {payment.status === "pending" ? (
                         <div className="flex items-center gap-3">
                           <button
-                            disabled={updatingPaymentId === payment.id}
+                            disabled={updatingPaymentId !== null}
                             onClick={() =>
                               handleStatusUpdate(payment.id, "confirmed")
                             }
-                            className="font-semibold text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
+                            className="font-semibold text-emerald-400 transition hover:text-emerald-300 disabled:opacity-40"
                           >
-                            Confirm
+                            {updatingPaymentId === payment.id ? "Updating..." : "Confirm"}
                           </button>
 
                           <button
-                            disabled={updatingPaymentId === payment.id}
+                            disabled={updatingPaymentId !== null}
                             onClick={() =>
                               handleStatusUpdate(payment.id, "rejected")
                             }
-                            className="font-semibold text-rose-600 hover:text-rose-800 disabled:opacity-50"
+                            className="font-semibold text-red-400 transition hover:text-red-300 disabled:opacity-40"
                           >
                             Reject
                           </button>
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-zinc-500">
                           No action
                         </span>
                       )}
@@ -423,10 +440,18 @@ function SummaryCard({
   description: string;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-gray-500">{label}</p>
-      <p className="mt-3 text-2xl font-bold text-gray-900">{value}</p>
-      <p className="mt-1 text-xs text-gray-500">{description}</p>
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-700">
+      <p className="text-sm font-medium text-zinc-400">
+        {label}
+      </p>
+
+      <p className="mt-3 text-2xl font-bold text-white">
+        {value}
+      </p>
+
+      <p className="mt-1 text-xs text-zinc-500">
+        {description}
+      </p>
     </div>
   );
 }
