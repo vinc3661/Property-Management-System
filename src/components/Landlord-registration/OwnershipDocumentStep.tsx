@@ -61,7 +61,7 @@ const OwnershipDocumentStep = ({
   return (
     <div className="mx-auto w-full max-w-xl overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl">
 
-      {/* Header */}
+      
       <div className="border-b border-zinc-800 px-6 py-7 sm:px-8">
 
         <div className="mb-4 flex items-center justify-between">
@@ -168,7 +168,7 @@ const OwnershipDocumentStep = ({
           </div>
         )}
 
-        {/* Error */}
+        
         {error && (
           <p
             role="alert"
