@@ -10,7 +10,7 @@ import { PropertiesPage } from "../propertiesPage";
 import { PaymentsPage } from "../PaymentsPage";
 import {CaretakersPage} from "../CaretakersPage";
 import { DashboardSidebar } from "./DashboardSidebar";
-import { DashboardHeader } from "./DashboardHeader";
+import {DashboardHeader} from "./DashboardHeader";
 import { OverviewCards } from "./OverviewCards";
 import type { PropertyTenantImport } from "../../types/propertyTenantImport";
 import {TenantBulkForm}from "../tenantBulkForm";
