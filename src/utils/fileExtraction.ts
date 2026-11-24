@@ -18,7 +18,7 @@ export async function extractFileContent(
 ): Promise<ExtractedFile> {
   const extension = file.name.split(".").pop()?.toLowerCase();
 
-  // EXCEL AND CSV
+  
   if (extension === "xlsx" || extension === "csv") {
     const buffer = await file.arrayBuffer();
 
@@ -45,7 +45,7 @@ export async function extractFileContent(
     };
   }
 
-  // WORD DOCUMENTS
+  
   if (extension === "docx") {
     const buffer = await file.arrayBuffer();
 
@@ -63,7 +63,7 @@ export async function extractFileContent(
     };
   }
 
-  // PDF DOCUMENTS
+  
   if (extension === "pdf") {
     const buffer = await file.arrayBuffer();
 
@@ -101,7 +101,7 @@ export async function extractFileContent(
     };
   }
 
-  // IMAGES AND SCANNED DOCUMENTS
+  
   if (
     ["jpg", "jpeg", "png", "webp", "bmp"].includes(extension ?? "")
   ) {
