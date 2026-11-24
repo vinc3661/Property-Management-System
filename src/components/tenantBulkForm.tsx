@@ -1,9 +1,9 @@
 
 import { useState } from "react";
 import type { ChangeEvent } from "react";
-import * as XLSX from "xlsx";
 
 import type { PropertyTenantImport } from "../types/propertyTenantImport";
+import { extractFileContent } from "../utils/fileExtraction";
 
 type TenantBulkProps = {
   onImportPropertiesAndTenants: (
@@ -16,26 +16,17 @@ type ImportError = {
   message: string;
 };
 
-const headers = [
-  "houseNumber",
-  "rentAmount",
-  "tenantName",
-  "leaseStart",
-  "paymentStatus",
-  "amountPaid",
-  "paymentDate",
-  "rentMonth",
-];
+function normalizeHeader(value: unknown): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]/g, "");
+}
 
 function getText(value: unknown): string {
   return String(value ?? "").trim();
 }
 
-function normalizeHeader(value: unknown): string {
-  return getText(value).toLowerCase().replace(/[\s_-]/g, "");
-}
-
-// Supports Excel date cells and YYYY-MM-DD text.
 function parseDate(value: unknown): string {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return [
@@ -45,151 +36,101 @@ function parseDate(value: unknown): string {
     ].join("-");
   }
 
-  if (typeof value === "number" && Number.isFinite(value)) {
-    const parsed = XLSX.SSF.parse_date_code(value);
-
-    if (parsed) {
-      return `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(
-        parsed.d
-      ).padStart(2, "0")}`;
-    }
-  }
-
   const text = getText(value);
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-    const date = new Date(`${text}T00:00:00`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return "";
 
-    if (
-      !Number.isNaN(date.getTime()) &&
-      date.toISOString().slice(0, 10) === text
-    ) {
-      return text;
-    }
-  }
+  const date = new Date(`${text}T00:00:00`);
 
-  return "";
+  return !Number.isNaN(date.getTime()) &&
+    date.toISOString().slice(0, 10) === text
+    ? text
+    : "";
 }
 
-function parseRentMonth(value: unknown): string {
-  const text = getText(value);
-
-  return /^\d{4}-(0[1-9]|1[0-2])$/.test(text) ? text : "";
-}
-
-function parseRecords(rows: Record<string, unknown>[]) {
+function validateRows(rows: Record<string, unknown>[]) {
   const records: PropertyTenantImport[] = [];
   const errors: ImportError[] = [];
   const seenHouses = new Set<string>();
 
   rows.forEach((row, index) => {
-    // Excel row 1 contains headers.
-    const rowNumber = index + 2;
-
-    const normalized: Record<string, unknown> = {};
+    const data: Record<string, unknown> = {};
 
     Object.entries(row).forEach(([key, value]) => {
-      normalized[normalizeHeader(key)] = value;
+      data[normalizeHeader(key)] = value;
     });
 
-    const houseNumber = getText(normalized.housenumber);
-    const tenantName = getText(normalized.tenantname);
-    const rentAmount = Number(normalized.rentamount);
-    const leaseStart = parseDate(normalized.leasestart);
-    const paymentStatus = getText(
-      normalized.paymentstatus
-    ).toLowerCase();
+    const houseNumber = getText(data.housenumber);
+    const tenantName = getText(data.tenantname);
+    const rentText = getText(data.rentamount);
+    const rentAmount = Number(rentText);
+    const leaseStart = parseDate(data.leasestart);
 
-    const amountPaidText = getText(normalized.amountpaid);
-    const amountPaid = amountPaidText
-      ? Number(amountPaidText)
-      : undefined;
+    const paymentStatus = getText(data.paymentstatus).toLowerCase();
 
-    const paymentDateText = getText(normalized.paymentdate);
+    const amountText = getText(data.amountpaid);
+    const amountPaid = amountText ? Number(amountText) : undefined;
+
+    const paymentDateText = getText(data.paymentdate);
     const paymentDate = paymentDateText
-      ? parseDate(normalized.paymentdate)
+      ? parseDate(data.paymentdate)
       : "";
 
-    const rentMonthText = getText(normalized.rentmonth);
+    const rentMonthText = getText(data.rentmonth);
     const rentMonth = rentMonthText
-      ? parseRentMonth(normalized.rentmonth)
+      ? getText(data.rentmonth)
       : "";
-
-    // Ignore completely empty spreadsheet rows.
-    if (
-      !houseNumber &&
-      !tenantName &&
-      !getText(normalized.rentamount) &&
-      !getText(normalized.leasestart) &&
-      !paymentStatus
-    ) {
-      return;
-    }
 
     const rowErrors: string[] = [];
 
-    if (!houseNumber) {
-      rowErrors.push("House number is required.");
-    }
+    if (!houseNumber) rowErrors.push("House number is missing.");
+    if (!tenantName) rowErrors.push("Tenant name is missing.");
 
-    if (!tenantName) {
-      rowErrors.push("Tenant name is required.");
-    }
-
-    if (
-      !getText(normalized.rentamount) ||
-      !Number.isFinite(rentAmount) ||
-      rentAmount <= 0
-    ) {
-      rowErrors.push("Rent must be a number greater than zero.");
+    if (!rentText || !Number.isFinite(rentAmount) || rentAmount <= 0) {
+      rowErrors.push("Invalid monthly rent.");
     }
 
     if (!leaseStart) {
-      rowErrors.push("Lease start must be a valid YYYY-MM-DD date.");
+      rowErrors.push("Invalid lease start date. Use YYYY-MM-DD.");
     }
 
     if (!["paid", "pending", "unpaid"].includes(paymentStatus)) {
-      rowErrors.push("Payment status must be paid, pending or unpaid.");
+      rowErrors.push("Invalid payment status.");
     }
 
     const houseKey = houseNumber.toLowerCase();
 
     if (houseNumber && seenHouses.has(houseKey)) {
-      rowErrors.push("Duplicate house number in this spreadsheet.");
+      rowErrors.push("Duplicate house number in this file.");
     }
 
-    if (houseNumber) {
-      seenHouses.add(houseKey);
-    }
+    if (houseNumber) seenHouses.add(houseKey);
 
-    if (
-      amountPaidText &&
-      (!Number.isFinite(amountPaid) || amountPaid! <= 0)
-    ) {
-      rowErrors.push("Amount paid must be greater than zero.");
+    if (amountText && (!Number.isFinite(amountPaid) || amountPaid! <= 0)) {
+      rowErrors.push("Invalid payment amount.");
     }
 
     if (paymentStatus === "paid") {
       if (amountPaid === undefined) {
-        rowErrors.push("Paid tenants require an amount paid.");
+        rowErrors.push("Paid tenant requires an amount paid.");
       }
 
       if (!paymentDate) {
-        rowErrors.push("Paid tenants require a valid payment date.");
+        rowErrors.push("Paid tenant requires a valid payment date.");
       }
 
-      if (!rentMonth) {
-        rowErrors.push("Paid tenants require a rent month (YYYY-MM).");
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(rentMonth)) {
+        rowErrors.push("Paid tenant requires a rent month (YYYY-MM).");
       }
-    } else if (amountPaidText || paymentDateText || rentMonthText) {
+    } else if (amountText || paymentDateText || rentMonthText) {
       rowErrors.push(
-        "Payment details should only be supplied for paid tenants."
+        "Payment details should only be provided for paid tenants."
       );
     }
 
-    if (rowErrors.length > 0) {
+    if (rowErrors.length) {
       rowErrors.forEach((message) => {
-        errors.push({ row: rowNumber, message });
+        errors.push({ row: index + 2, message });
       });
 
       return;
@@ -205,23 +146,82 @@ function parseRecords(rows: Record<string, unknown>[]) {
         | "pending"
         | "unpaid",
       ...(amountPaid !== undefined
-        ? {
-            amountPaid,
-            paymentDate,
-            rentMonth,
-          }
+        ? { amountPaid, paymentDate, rentMonth }
         : {}),
     });
   });
 
-  if (records.length === 0 && errors.length === 0) {
-    errors.push({
-      row: 0,
-      message: "The spreadsheet contains no tenant records.",
-    });
-  }
-
   return { records, errors };
+}
+
+// Text documents must use pipe-separated or tab-separated records.
+// Expected order:
+// houseNumber | tenantName | rentAmount | leaseStart | paymentStatus | amountPaid | paymentDate | rentMonth
+function parseDocumentText(text: string) {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const rows: Record<string, unknown>[] = [];
+  const errors: ImportError[] = [];
+
+  const expectedHeaders = [
+    "housenumber",
+    "tenantname",
+    "rentamount",
+    "leasestart",
+    "paymentstatus",
+    "amountpaid",
+    "paymentdate",
+    "rentmonth",
+  ];
+
+  lines.forEach((line, index) => {
+    const separator = line.includes("|") ? "|" : "\t";
+
+    if (!line.includes("|") && !line.includes("\t")) {
+      errors.push({
+        row: index + 1,
+        message: "Could not identify columns. Use | or tab separators.",
+      });
+      return;
+    }
+
+    const values = line.split(separator).map((value) => value.trim());
+
+    // Allow a header row.
+    if (
+      values.map(normalizeHeader).join("|") ===
+      expectedHeaders.join("|")
+    ) {
+      return;
+    }
+
+    if (values.length !== 8) {
+      errors.push({
+        row: index + 1,
+        message: "Expected exactly 8 columns in this record.",
+      });
+      return;
+    }
+
+    rows.push(
+      Object.fromEntries(
+        expectedHeaders.map((header, columnIndex) => [
+          header,
+          values[columnIndex],
+        ])
+      )
+    );
+  });
+
+  const validation = validateRows(rows);
+
+  return {
+    records: validation.records,
+    errors: [...errors, ...validation.errors],
+  };
 }
 
 export function TenantBulkForm({
@@ -234,39 +234,6 @@ export function TenantBulkForm({
   const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState("");
 
-  const downloadTemplate = () => {
-    const template = [
-      headers,
-      [
-        "A01",
-        8000,
-        "John Doe",
-        "2026-01-01",
-        "paid",
-        8000,
-        "2026-01-05",
-        "2026-01",
-      ],
-      [
-        "A02",
-        7500,
-        "Jane Doe",
-        "2026-02-01",
-        "pending",
-        "",
-        "",
-        "",
-      ],
-    ];
-
-    const worksheet = XLSX.utils.aoa_to_sheet(template);
-    const workbook = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Tenants");
-
-    XLSX.writeFile(workbook, "PMS_Tenant_Import_Template.xlsx");
-  };
-
   const handleFileChange = async (
     event: ChangeEvent<HTMLInputElement>
   ) => {
@@ -275,43 +242,33 @@ export function TenantBulkForm({
     if (!file) return;
 
     setLoading(true);
-    setMessage("");
     setRecords([]);
     setErrors([]);
+    setMessage("");
     setFileName(file.name);
 
     try {
-      const extension = file.name.split(".").pop()?.toLowerCase();
+      const result = await extractFileContent(file);
 
-      if (!["xlsx", "csv"].includes(extension ?? "")) {
-        throw new Error("Please upload an Excel (.xlsx) or CSV file.");
+      let parsed;
+
+      if (result.rows) {
+        parsed = validateRows(result.rows);
+      } else {
+        parsed = parseDocumentText(result.text);
       }
 
-      const buffer = await file.arrayBuffer();
+      setRecords(parsed.records);
+      setErrors(parsed.errors);
 
-      const workbook = XLSX.read(buffer, {
-        type: "array",
-        cellDates: true,
-      });
-
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-
-      if (!firstSheet) {
-        throw new Error("The uploaded file has no worksheet.");
+      if (parsed.records.length > 0 && parsed.errors.length === 0) {
+        setMessage("File processed successfully. Review your records.");
       }
 
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(
-        firstSheet,
-        { defval: "" }
-      );
-
-      const result = parseRecords(rows);
-
-      setRecords(result.records);
-      setErrors(result.errors);
-
-      if (result.records.length > 0 && result.errors.length === 0) {
-        setMessage("Spreadsheet validated successfully. Review before importing.");
+      if (parsed.records.length === 0 && parsed.errors.length === 0) {
+        setErrors([
+          { row: 0, message: "No tenant records were found." },
+        ]);
       }
     } catch (error) {
       setErrors([
@@ -320,7 +277,7 @@ export function TenantBulkForm({
           message:
             error instanceof Error
               ? error.message
-              : "Could not read the spreadsheet.",
+              : "Could not process this file.",
         },
       ]);
     } finally {
@@ -330,7 +287,7 @@ export function TenantBulkForm({
   };
 
   const handleImport = async () => {
-    if (records.length === 0 || errors.length > 0) return;
+    if (!records.length || errors.length || importing) return;
 
     try {
       setImporting(true);
@@ -351,43 +308,37 @@ export function TenantBulkForm({
     }
   };
 
-  const inputClass =
-    "block w-full rounded-lg border border-gray-700 bg-gray-900 p-3 text-white file:mr-4 file:rounded-md file:border-0 file:bg-green-600 file:px-4 file:py-2 file:text-white";
-
   return (
     <div className="space-y-6 rounded-xl border border-gray-800 bg-gray-950 p-6 text-white">
       <div>
         <h2 className="text-xl font-semibold">
-          Bulk Import Tenants
+          Bulk Import Properties & Tenants
         </h2>
-        <p className="mt-1 text-sm text-gray-400">
-          Upload one spreadsheet containing your properties and tenants.
+
+        <p className="mt-2 text-sm text-gray-400">
+          Upload your existing tenant records from your device.
         </p>
       </div>
 
-      <button
-        type="button"
-        onClick={downloadTemplate}
-        className="rounded-lg border border-gray-700 px-4 py-3 text-sm transition hover:bg-gray-800"
-      >
-        Download Excel Template
-      </button>
+      <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+        <p className="mb-2 text-sm font-medium">
+          Supported files
+        </p>
 
-      <div className="space-y-2">
-        <label className="block text-sm text-gray-300">
-          Select your spreadsheet
-        </label>
+        <p className="text-sm text-gray-400">
+          Excel, CSV, Word, PDF, JPG, PNG and WEBP.
+        </p>
 
         <input
           type="file"
-          accept=".xlsx,.csv"
+          accept=".xlsx,.csv,.docx,.pdf,.jpg,.jpeg,.png,.webp,.bmp"
           onChange={handleFileChange}
           disabled={loading || importing}
-          className={inputClass}
+          className="mt-4 block w-full text-sm text-gray-300 file:mr-4 file:rounded-lg file:border-0 file:bg-green-600 file:px-4 file:py-2 file:font-medium file:text-white"
         />
 
         {fileName && (
-          <p className="text-sm text-gray-400">
+          <p className="mt-3 text-sm text-gray-400">
             Selected: {fileName}
           </p>
         )}
@@ -395,14 +346,14 @@ export function TenantBulkForm({
 
       {loading && (
         <p className="text-sm text-gray-300">
-          Reading and validating spreadsheet...
+          Extracting and validating file contents...
         </p>
       )}
 
       {records.length > 0 && (
         <div className="space-y-3">
           <h3 className="font-semibold">
-            Import Preview ({records.length} valid records)
+            Preview ({records.length} records)
           </h3>
 
           <div className="overflow-x-auto rounded-lg border border-gray-800">
@@ -412,7 +363,7 @@ export function TenantBulkForm({
                   <th className="p-3">House</th>
                   <th className="p-3">Tenant</th>
                   <th className="p-3">Rent</th>
-                  <th className="p-3">Lease Start</th>
+                  <th className="p-3">Lease</th>
                   <th className="p-3">Status</th>
                 </tr>
               </thead>
@@ -439,9 +390,9 @@ export function TenantBulkForm({
       )}
 
       {errors.length > 0 && (
-        <div className="space-y-2 rounded-lg border border-red-900 bg-red-950/30 p-4">
-          <h3 className="font-semibold text-red-400">
-            Please fix these errors ({errors.length})
+        <div className="rounded-lg border border-red-900 bg-red-950/30 p-4">
+          <h3 className="mb-2 font-semibold text-red-400">
+            Import errors ({errors.length})
           </h3>
 
           <ul className="space-y-1 text-sm text-red-300">
@@ -463,8 +414,8 @@ export function TenantBulkForm({
         type="button"
         onClick={handleImport}
         disabled={
-          importing ||
           loading ||
+          importing ||
           records.length === 0 ||
           errors.length > 0
         }
