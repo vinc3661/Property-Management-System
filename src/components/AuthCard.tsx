@@ -361,7 +361,7 @@ export function AuthCard({
               )}
             </AnimatePresence>
 
-            {/* Google sign-in */}
+            
             <div className="mt-7">
               <div className="relative mb-5 flex items-center">
                 <div className="flex-grow border-t border-zinc-800" />
