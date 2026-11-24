@@ -1,540 +1,722 @@
 ﻿
-import { useEffect, useState } from "react";
-import type { User as FirebaseUser } from "firebase/auth";
+import { initializeApp } from "firebase/app";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  onSnapshot,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  setDoc,
+  getDoc,
+  query,
+  where,
+  serverTimestamp,
+  runTransaction,
+} from "firebase/firestore";
 
-import { LandlordDashboard } from "./components/dashboard/LandlordDashboard";
-import { AuthCard } from "./components/AuthCard";
-import { UserProfileForm } from "./components/UserProfileForm";
-import { LandlordApplicationFlow } from "./components/Landlord-registration/LandlordApplicationFlow";
-import { AdminDashboard } from "./components/AdminDashboard";
-import { AcceptanceCode } from "./components/acceptanceCode";
+import { getAuth } from "firebase/auth";
 
-import type { PropertyTenantImport } from "./types/propertyTenantImport";
+import type { Payment } from "./types/Payment";
 import type { Tenant } from "./types/Tenant";
 import type { Property } from "./types/Property";
-import type { Payment } from "./types/Payment";
 import type { UserProfile } from "./types/UserProfile";
+import type { PropertyTenantImport } from "./types/propertyTenantImport";
 
-import {
-  addTenantToCloud,
-  subscribeToTenants,
-  deleteTenantFromCloud,
-  updateTenantsInCloud,
-  addPropertiesToCloud,
-  subscribeToProperties,
-  deletePropertyFromCloud,
-  updatePropertiesInCloud,
-  getUserProfile,
-  setUserProfile as saveProfileToFirestore,
-  recordPayment,
-  subscribeToPayments,
-  updatePaymentStatus,
-  importPropertiesAndTenants,
-} from "./services/firebase";
+import { supabase } from "./services/supabase";
 
-import {
-  registerUser,
-  signUser,
-  SubscribeToAuthState,
-  signInWithGoogle,
-  signOutAccount,
-} from "./services/auth";
-
-type RegisterData = {
-  email: string;
-  password: string;
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-type LoginData = {
-  email: string;
-  password: string;
-};
+console.log("Firebase project:", firebaseConfig.projectId);
 
-function App() {
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
+const app = initializeApp(firebaseConfig);
 
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [userProfile, setUserProfileState] =
-    useState<UserProfile | null>(null);
+export const db = getFirestore(app);
+export const auth = getAuth(app);
 
-  const [authLoading, setAuthLoading] = useState(true);
-  const [profileSaving, setProfileSaving] = useState(false);
 
-  const isAdmin = user?.uid === import.meta.env.VITE_ADMIN_UID;
+const PROPERTY_COLLECTION = "properties";
+const TENANT_COLLECTION = "tenants";
+const PROFILE_COLLECTION = "profiles";
+const APPLICATION_COLLECTION = "applicants";
+const PAYMENT_COLLECTION = "payments";
 
-  const invitationToken =
-    window.location.pathname.match(/^\/invite\/([^/]+)\/?$/)?.[1] ??
-    null;
 
-  const landlordId =
-    userProfile?.role === "landlord"
-      ? userProfile.id
-      : userProfile?.role === "caretaker"
-        ? userProfile.landlordId
-        : null;
+function normalizeHouseNumber(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
 
- 
-  useEffect(() => {
-    if (!landlordId) {
-      setTenants([]);
-      return;
-    }
+function createPropertyId(
+  landlordId: string,
+  houseNumber: string
+): string {
+  return `${encodeURIComponent(landlordId)}__${encodeURIComponent(
+    normalizeHouseNumber(houseNumber)
+  )}`;
+}
 
-    const unsubscribe = subscribeToTenants(
-      landlordId,
-      (tenantData) => {
-        setTenants(tenantData);
-      }
+async function checkLegacyPropertyDuplicate(
+  landlordId: string,
+  houseNumber: string
+): Promise<void> {
+  const propertiesQuery = query(
+    collection(db, PROPERTY_COLLECTION),
+    where("landlordId", "==", landlordId)
+  );
+
+  const existingProperties = await getDocs(propertiesQuery);
+
+  const normalizedHouseNumber = normalizeHouseNumber(houseNumber);
+
+  const duplicate = existingProperties.docs.some(
+    (propertyDoc) =>
+      normalizeHouseNumber(propertyDoc.data().houseNumber ?? "") ===
+      normalizedHouseNumber
+  );
+
+  if (duplicate) {
+    throw new Error(
+      `House ${houseNumber} already exists in your properties.`
     );
+  }
+}
 
-    return unsubscribe;
-  }, [landlordId]);
 
-  
-  useEffect(() => {
-    if (!landlordId) {
-      setProperties([]);
-      return;
-    }
+export async function addTenantToCloud(
+  landlordId: string,
+  tenantData: Omit<Tenant, "id" | "landlordId">
+): Promise<Tenant> {
+  try {
+    const tenantCollection = collection(db, TENANT_COLLECTION);
 
-    const unsubscribe = subscribeToProperties(
+    console.log("About to save tenant:", tenantData);
+
+    const docRef = await addDoc(tenantCollection, {
+      ...tenantData,
       landlordId,
-      (propertyData) => {
-        setProperties(propertyData);
-      }
-    );
-
-    return unsubscribe;
-  }, [landlordId]);
-
-  useEffect(() => {
-    if (!landlordId) {
-      setPayments([]);
-      return;
-    }
-
-    const unsubscribe = subscribeToPayments(
-      landlordId,
-      (paymentData) => {
-        setPayments(paymentData);
-      }
-    );
-
-    return unsubscribe;
-  }, [landlordId]);
-
-  useEffect(() => {
-    const unsubscribe = SubscribeToAuthState(async (firebaseUser) => {
-      setUser(firebaseUser);
-      setAuthLoading(true);
-      setUserProfileState(null);
-
-      if (!firebaseUser) {
-        setAuthLoading(false);
-        return;
-      }
-
-      try {
-        const profile = await getUserProfile(firebaseUser.uid);
-        setUserProfileState(profile);
-      } catch (error) {
-        console.error("Failed to load user profile:", error);
-      } finally {
-        setAuthLoading(false);
-      }
     });
 
-    return unsubscribe;
-  }, []);
+    console.log("Tenant saved with ID:", docRef.id);
 
- 
-  const handleRegisterUser = async (data: RegisterData) => {
-    try {
-      await registerUser(data.email, data.password);
-    } catch (error) {
-      console.error("Failed to register account:", error);
-      throw error;
-    }
-  };
-
-
-  const handleSignUser = async (data: LoginData) => {
-    try {
-      await signUser(data.email, data.password);
-    } catch (error) {
-      console.error("Failed to sign in:", error);
-      throw error;
-    }
-  };
-
- 
-  const handleGoogleSignIn = async () => {
-    try {
-      await signInWithGoogle();
-      console.log("User signed in with Google.");
-    } catch (error) {
-      console.error("Google sign-in failed:", error);
-      throw error;
-    }
-  };
-
-
-  const handleSignOut = async () => {
-    try {
-      await signOutAccount();
-    } catch (error) {
-      console.error("Sign out failed:", error);
-      throw error;
-    }
-  };
-
-  const handleSaveUserProfile = async (
-    data: Pick<UserProfile, "email" | "name">
-  ) => {
-    if (!user) {
-      throw new Error("Cannot save profile: no authenticated user.");
-    }
-
-    setProfileSaving(true);
-
-    try {
-      const profile: UserProfile = {
-        id: user.uid,
-        email: data.email,
-        name: data.name,
-        role: null,
-        landlordId: null,
-        phoneNumber: null,
-      };
-
-      await saveProfileToFirestore(user.uid, profile);
-      setUserProfileState(profile);
-
-      console.log("User profile saved successfully.");
-    } catch (error) {
-      console.error("Failed to save user profile:", error);
-      throw error;
-    } finally {
-      setProfileSaving(false);
-    }
-  };
-
-  
-  const handleAddTenant = async (
-    tenantData: Omit<Tenant, "id" | "landlordId">
-  ) => {
-    if (!landlordId) {
-      throw new Error("Cannot add tenant: landlord ID is missing.");
-    }
-
-    try {
-      await addTenantToCloud(landlordId, tenantData);
-    } catch (error) {
-      console.error("Failed to add tenant:", error);
-      throw error;
-    }
-  };
-
- 
-  const handleDeleteTenant = async (id: string) => {
-    if (!landlordId) {
-      throw new Error("Cannot delete tenant: landlord ID is missing.");
-    }
-
-    try {
-      await deleteTenantFromCloud(id);
-    } catch (error) {
-      console.error("Failed to delete tenant:", error);
-      throw error;
-    }
-  };
-
- 
-  const handleImportPropertiesAndTenants = async (
-    records: PropertyTenantImport[]
-  ) => {
-    if (!landlordId) {
-      throw new Error("Cannot import: landlord ID is missing.");
-    }
-
-    try {
-      await importPropertiesAndTenants(landlordId, records);
-      console.log("Bulk import completed successfully.");
-    } catch (error) {
-      console.error("Bulk import failed:", error);
-      throw error;
-    }
-  };
-
-
-  const handleUpdateTenant = async (
-    id: string,
-    updates: Partial<Omit<Tenant, "id" | "landlordId">>
-  ) => {
-    if (!landlordId) {
-      throw new Error("Cannot update tenant: landlord ID is missing.");
-    }
-
-    try {
-      await updateTenantsInCloud(id, updates);
-    } catch (error) {
-      console.error("Failed to update tenant:", error);
-      throw error;
-    }
-  };
-
-  
-  const handleAddProperty = async (
-    property: Omit<Property, "id" | "landlordId">
-  ) => {
-    if (!landlordId) {
-      throw new Error("Cannot add property: landlord ID is missing.");
-    }
-
-    try {
-      await addPropertiesToCloud(landlordId, property);
-    } catch (error) {
-      console.error("Failed to add property:", error);
-      throw error;
-    }
-  };
-
-  
-  const handleDeleteProperty = async (propertyId: string) => {
-    if (!landlordId) {
-      throw new Error("Cannot delete property: landlord ID is missing.");
-    }
-
-    try {
-      await deletePropertyFromCloud(propertyId);
-    } catch (error) {
-      console.error("Failed to delete property:", error);
-      throw error;
-    }
-  };
-
-  
-  const handleUpdateProperty = async (
-    id: string,
-    updates: Partial<Omit<Property, "id" | "landlordId">>
-  ) => {
-    if (!landlordId) {
-      throw new Error("Cannot update property: landlord ID is missing.");
-    }
-
-    try {
-      await updatePropertiesInCloud(id, updates);
-    } catch (error) {
-      console.error("Failed to update property:", error);
-      throw error;
-    }
-  };
-
- 
-  const handleRecordPayment = async (
-    paymentData: Omit<Payment, "id" | "landlordId" | "createdAt">
-  ) => {
-    if (!landlordId) {
-      throw new Error("Cannot record payment: landlord ID is missing.");
-    }
-
-    try {
-      await recordPayment(landlordId, paymentData);
-      console.log("Payment recorded successfully.");
-    } catch (error) {
-      console.error("Failed to record payment:", error);
-      throw error;
-    }
-  };
-
-  
-  const handleUpdatePaymentStatus = async (
-    paymentId: string,
-    status: Payment["status"]
-  ) => {
-    if (!landlordId) {
-      throw new Error("Cannot update payment: landlord ID is missing.");
-    }
-
-    try {
-      await updatePaymentStatus(paymentId, status);
-      console.log("Payment status updated successfully.");
-    } catch (error) {
-      console.error("Failed to update payment status:", error);
-      throw error;
-    }
-  };
-
-  
-  if (authLoading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p>Checking your account...</p>
-      </main>
-    );
+    return {
+      ...tenantData,
+      id: docRef.id,
+      landlordId,
+    };
+  } catch (error) {
+    console.error("Failed to add tenant to the database:", error);
+    throw error;
   }
+}
 
-  
+export async function updateTenantsInCloud(
+  id: string,
+  updates: Partial<Omit<Tenant, "id" | "landlordId">>
+): Promise<void> {
+  try {
+    const tenantDocument = doc(db, TENANT_COLLECTION, id);
+
+    await updateDoc(tenantDocument, updates);
+  } catch (error) {
+    console.error("Failed to update tenant:", error);
+    throw error;
+  }
+}
+
+export async function deleteTenantFromCloud(
+  id: string
+): Promise<void> {
+  try {
+    const tenantDocument = doc(db, TENANT_COLLECTION, id);
+
+    await deleteDoc(tenantDocument);
+  } catch (error) {
+    console.error("Failed to delete tenant from the cloud:", error);
+    throw error;
+  }
+}
+
+export function subscribeToTenants(
+  landlordId: string,
+  onDataUpdate: (tenants: Tenant[]) => void
+): () => void {
+  const tenantQuery = query(
+    collection(db, TENANT_COLLECTION),
+    where("landlordId", "==", landlordId)
+  );
+
+  return onSnapshot(tenantQuery, (snapshot) => {
+    const tenants: Tenant[] = snapshot.docs.map((tenantDoc) => ({
+      ...(tenantDoc.data() as Omit<Tenant, "id">),
+      id: tenantDoc.id,
+    }));
+
+    onDataUpdate(tenants);
+  });
+}
+
+export async function getTenantsFromCloud(
+  landlordId: string
+): Promise<Tenant[]> {
+  try {
+    const tenantQuery = query(
+      collection(db, TENANT_COLLECTION),
+      where("landlordId", "==", landlordId)
+    );
+
+    const querySnapshot = await getDocs(tenantQuery);
+
+    return querySnapshot.docs.map((tenantDoc) => ({
+      ...(tenantDoc.data() as Omit<Tenant, "id">),
+      id: tenantDoc.id,
+    }));
+  } catch (error) {
+    console.error("Failed to get tenants from cloud:", error);
+    throw error;
+  }
+}
+
+
+export async function addPropertiesToCloud(
+  landlordId: string,
+  propertyData: Omit<Property, "id" | "landlordId">
+): Promise<Property> {
+  try {
+    if (!propertyData.houseNumber.trim()) {
+      throw new Error("House number is required.");
+    }
+
+   
+    await checkLegacyPropertyDuplicate(
+      landlordId,
+      propertyData.houseNumber
+    );
+
+    const propertyRef = doc(
+      db,
+      PROPERTY_COLLECTION,
+      createPropertyId(landlordId, propertyData.houseNumber)
+    );
+
+    await runTransaction(db, async (transaction) => {
+      const existingProperty = await transaction.get(propertyRef);
+
+      if (existingProperty.exists()) {
+        throw new Error(
+          `House ${propertyData.houseNumber} already exists.`
+        );
+      }
+
+      transaction.set(propertyRef, {
+        ...propertyData,
+        houseNumber: propertyData.houseNumber.trim(),
+        landlordId,
+      });
+    });
+
+    console.log("Property added with ID:", propertyRef.id);
+
+    return {
+      ...propertyData,
+      id: propertyRef.id,
+      landlordId,
+    };
+  } catch (error) {
+    console.error("Failed to add property to cloud:", error);
+    throw error;
+  }
+}
+
+export async function updatePropertiesInCloud(
+  id: string,
+  updates: Partial<Omit<Property, "id" | "landlordId">>
+): Promise<void> {
+  try {
+    const propertyDocument = doc(db, PROPERTY_COLLECTION, id);
+
+    await updateDoc(propertyDocument, updates);
+  } catch (error) {
+    console.error("Failed to update property:", error);
+    throw error;
+  }
+}
+
+export async function deletePropertyFromCloud(
+  id: string
+): Promise<void> {
+  try {
+    const propertyDocument = doc(db, PROPERTY_COLLECTION, id);
+
+    await deleteDoc(propertyDocument);
+  } catch (error) {
+    console.error("Failed to delete property in cloud:", error);
+    throw error;
+  }
+}
+
+export async function getPropertiesFromCloud(
+  landlordId: string
+): Promise<Property[]> {
+  try {
+    const propertyQuery = query(
+      collection(db, PROPERTY_COLLECTION),
+      where("landlordId", "==", landlordId)
+    );
+
+    const querySnapshot = await getDocs(propertyQuery);
+
+    return querySnapshot.docs.map((propertyDoc) => ({
+      ...(propertyDoc.data() as Omit<Property, "id">),
+      id: propertyDoc.id,
+    }));
+  } catch (error) {
+    console.error("Failed to retrieve property data:", error);
+    throw new Error("Failed to get properties.");
+  }
+}
+
+export function subscribeToProperties(
+  landlordId: string,
+  onDataUpdate: (properties: Property[]) => void
+): () => void {
+  const propertiesQuery = query(
+    collection(db, PROPERTY_COLLECTION),
+    where("landlordId", "==", landlordId)
+  );
+
+  return onSnapshot(propertiesQuery, (snapshot) => {
+    const properties: Property[] = snapshot.docs.map((propertyDoc) => ({
+      ...(propertyDoc.data() as Omit<Property, "id">),
+      id: propertyDoc.id,
+    }));
+
+    onDataUpdate(properties);
+  });
+}
+
+
+export async function setUserProfile(
+  id: string,
+  profile: UserProfile
+) {
+  try {
+    const docRef = doc(db, PROFILE_COLLECTION, id);
+
+    console.log("Authenticated UID:", id);
+    console.log("Profile being saved:", profile);
+    console.log("Auth email:", auth.currentUser?.email);
+
+    await setDoc(docRef, {
+      email: profile.email,
+      role: profile.role,
+      name: profile.name,
+      landlordId: profile.landlordId,
+      phoneNumber: profile.phoneNumber,
+    });
+
+    console.log("User profile set:", docRef.id);
+
+    return {
+      ...profile,
+      id: docRef.id,
+    };
+  } catch (error) {
+    console.error("Failed to set user profile:", error);
+    throw error;
+  }
+}
+
+export async function getUserProfile(
+  id: string
+): Promise<UserProfile | null> {
+  try {
+    const docRef = doc(db, PROFILE_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      console.log("User profile not found:", docRef.id);
+      return null;
+    }
+
+    console.log("User profile retrieved:", docRef.id);
+
+    return {
+      ...docSnap.data(),
+      id: docSnap.id,
+    } as UserProfile;
+  } catch (error) {
+    console.error("Failed to get user profile:", error);
+    throw error;
+  }
+}
+
+
+export async function submitLandlordApplication(
+  propertyName: string,
+  propertyAddress: string,
+  ownershipDocument: File
+): Promise<void> {
+  const user = auth.currentUser;
+
   if (!user) {
-    return (
-      <AuthCard
-        onSignUser={handleSignUser}
-        onRegister={handleRegisterUser}
-        onGoogleSignIn={handleGoogleSignIn}
-      />
+    throw new Error("You must have a signed-in user account.");
+  }
+
+  const token = await user.getIdToken(true);
+
+  console.log("Firebase authentication diagnostics:", {
+    uid: user.uid,
+    emailVerified: user.emailVerified,
+    provider: user.providerData.map(
+      (provider) => provider.providerId
+    ),
+  });
+
+  if (!token) {
+    throw new Error("No Firebase ID token was obtained.");
+  }
+
+  const formData = new FormData();
+
+  formData.append("propertyAddress", propertyAddress);
+  formData.append("ownershipDocument", ownershipDocument);
+
+  const { error, data } = await supabase.functions.invoke<{
+    uid: string;
+    documentPath: string;
+  }>("submit-landlord-application", {
+    body: formData,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (error) {
+    console.error("Supabase function failed:", error);
+    throw new Error(error.message);
+  }
+
+  if (!data?.documentPath || data.uid !== user.uid) {
+    throw new Error("Invalid response from document upload service.");
+  }
+
+  const applicationRef = doc(
+    collection(db, APPLICATION_COLLECTION)
+  );
+
+  await setDoc(applicationRef, {
+    applicantId: user.uid,
+    propertyAddress,
+    propertyName,
+    documentPath: data.documentPath,
+    documentFileName: ownershipDocument.name,
+    submittedAt: serverTimestamp(),
+    status: "pending",
+  });
+}
+
+
+export async function recordPayment(
+  landlordId: string,
+  paymentData: Omit<Payment, "id" | "landlordId" | "createdAt">
+): Promise<Payment> {
+  try {
+    const paymentToSave = {
+      tenantId: paymentData.tenantId,
+      landlordId,
+      houseNumber: paymentData.houseNumber,
+      amount: paymentData.amount,
+      paymentDate: paymentData.paymentDate,
+      month: paymentData.rentMonth,
+      status: "pending",
+      createdAt: serverTimestamp(),
+    };
+
+    const docRef = await addDoc(
+      collection(db, PAYMENT_COLLECTION),
+      paymentToSave
     );
+
+    console.log("Payment recorded successfully:", docRef.id);
+
+    return {
+      ...paymentData,
+      landlordId,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      id: docRef.id,
+    };
+  } catch (error) {
+    console.error("Failed to record payment:", error);
+    throw error;
   }
+}
 
-  
-  if (isAdmin) {
-    return <AdminDashboard />;
-  }
+export function subscribeToPayments(
+  landlordId: string,
+  onDataUpdate: (payments: Payment[]) => void
+): () => void {
+  const paymentQuery = query(
+    collection(db, PAYMENT_COLLECTION),
+    where("landlordId", "==", landlordId)
+  );
 
-  
-  if (invitationToken) {
-    return <AcceptanceCode invitationToken={invitationToken} />;
-  }
+  return onSnapshot(
+    paymentQuery,
+    (snapshot) => {
+      const payments: Payment[] = snapshot.docs.map((paymentDoc) => {
+        const data = paymentDoc.data();
 
- 
-  if (!userProfile) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-        <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
-          <h1 className="mb-2 text-2xl font-bold">
-            Complete your profile
-          </h1>
+        return {
+          ...data,
+          rentMonth: data.month,
+          id: paymentDoc.id,
+        } as Payment;
+      });
 
-          <p className="mb-6 text-gray-600">
-            Enter your name and email to finish setting up your account.
-          </p>
-
-          <UserProfileForm
-            onRegisterUserProfile={handleSaveUserProfile}
-            initialEmail={user.email ?? ""}
-            initialName={user.displayName ?? ""}
-          />
-
-          {profileSaving && (
-            <p className="mt-4 text-sm text-gray-500">
-              Saving your profile...
-            </p>
-          )}
-        </section>
-      </main>
-    );
-  }
-
-  
-  if (userProfile.role === "landlord") {
-    return (
-      <LandlordDashboard
-        properties={properties}
-        tenants={tenants}
-        payments={payments}
-        userName={userProfile.name}
-        onSignOut={handleSignOut}
-        onAddTenant={handleAddTenant}
-        onDeleteTenant={handleDeleteTenant}
-        onUpdateTenant={handleUpdateTenant}
-        onAddProperty={handleAddProperty}
-        onDeleteProperty={handleDeleteProperty}
-        onUpdateProperty={handleUpdateProperty}
-        onRecordPayment={handleRecordPayment}
-        onUpdatePaymentStatus={handleUpdatePaymentStatus}
-        onImportPropertiesAndTenants={handleImportPropertiesAndTenants}
-        role={userProfile.role}
-      />
-    );
-  }
-
-
-  if (userProfile.role === "caretaker") {
-    if (!userProfile.landlordId) {
-      return (
-        <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-          <section className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-lg">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Awaiting workspace access
-            </h1>
-
-            <p className="mt-3 text-gray-600">
-              Your caretaker account has not yet been connected to a landlord.
-            </p>
-
-            <button
-              onClick={handleSignOut}
-              className="mt-6 rounded-lg bg-red-600 px-5 py-2 text-white hover:bg-red-700"
-            >
-              Sign out
-            </button>
-          </section>
-        </main>
-      );
+      onDataUpdate(payments);
+    },
+    (error) => {
+      console.error("Failed to subscribe to payments:", error);
     }
-
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-        <section className="max-w-md rounded-xl bg-white p-8 text-center shadow">
-          <h1 className="text-xl font-bold">
-            Caretaker dashboard coming next
-          </h1>
-
-          <p className="mt-2 text-gray-600">
-            Your workspace is connected. We're setting up your dashboard.
-          </p>
-
-          <button
-            onClick={handleSignOut}
-            className="mt-5 rounded-lg bg-red-600 px-5 py-2 text-white"
-          >
-            Sign out
-          </button>
-        </section>
-      </main>
-    );
-  }
-
-  
-  return (
-    <main className="min-h-screen bg-gray-100 p-4 md:p-8">
-      <div className="mx-auto max-w-3xl">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold">
-            Welcome, {userProfile.name}
-          </h1>
-
-          <p className="mt-2 text-gray-600">
-            {userProfile.email}
-          </p>
-
-          <p className="mt-1 text-sm text-gray-500">
-            Role: Awaiting approval
-          </p>
-        </header>
-
-        <section className="rounded-2xl bg-white p-6 shadow-md">
-          <h2 className="mb-2 text-2xl font-bold">
-            Apply for landlord access
-          </h2>
-
-          <p className="mb-6 text-gray-600">
-            Submit your property details and ownership document for review.
-          </p>
-
-          <LandlordApplicationFlow />
-        </section>
-
-        <button
-          onClick={handleSignOut}
-          className="mt-6 rounded-lg bg-red-600 px-5 py-2 text-white hover:bg-red-700"
-        >
-          Sign out
-        </button>
-      </div>
-    </main>
   );
 }
 
-export default App;
+export async function updatePaymentStatus(
+  paymentId: string,
+  status: Payment["status"]
+): Promise<void> {
+  try {
+    const paymentDocument = doc(
+      db,
+      PAYMENT_COLLECTION,
+      paymentId
+    );
+
+    await updateDoc(paymentDocument, { status });
+  } catch (error) {
+    console.error("Failed to update payment status:", error);
+    throw error;
+  }
+}
+
+
+export async function importPropertiesAndTenants(
+  landlordId: string,
+  records: PropertyTenantImport[]
+): Promise<void> {
+  if (!landlordId.trim()) {
+    throw new Error("Landlord ID is missing.");
+  }
+
+  if (!records.length) {
+    throw new Error("No records provided for import.");
+  }
+
+
+  const houseNumbers = records.map((record) =>
+    normalizeHouseNumber(record.houseNumber)
+  );
+
+  if (new Set(houseNumbers).size !== houseNumbers.length) {
+    throw new Error("Your file contains duplicate house numbers.");
+  }
+
+  let totalWrites = 0;
+
+  for (const record of records) {
+    const houseNumber = record.houseNumber?.trim();
+    const tenantName = record.tenantName?.trim();
+
+    if (
+      !houseNumber ||
+      !tenantName ||
+      !Number.isFinite(record.rentAmount) ||
+      record.rentAmount <= 0
+    ) {
+      throw new Error(
+        `Invalid property or tenant information for house ${record.houseNumber}.`
+      );
+    }
+
+    if (
+      !["paid", "pending", "unpaid"].includes(record.paymentStatus)
+    ) {
+      throw new Error(
+        `Invalid payment status for house ${houseNumber}.`
+      );
+    }
+
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(record.leaseStart) ||
+      Number.isNaN(Date.parse(record.leaseStart))
+    ) {
+      throw new Error(
+        `Invalid lease start date for house ${houseNumber}.`
+      );
+    }
+
+    if (
+      record.paymentStatus === "paid" &&
+      (
+        record.amountPaid === undefined ||
+        !Number.isFinite(record.amountPaid) ||
+        record.amountPaid <= 0 ||
+        !record.paymentDate ||
+        !record.rentMonth
+      )
+    ) {
+      throw new Error(
+        `Payment details are required for paid tenant in house ${houseNumber}.`
+      );
+    }
+
+    if (
+      record.amountPaid !== undefined &&
+      record.paymentStatus !== "paid"
+    ) {
+      throw new Error(
+        `Payment status must be paid for house ${houseNumber}.`
+      );
+    }
+
+    if (
+      record.paymentDate &&
+      (
+        !/^\d{4}-\d{2}-\d{2}$/.test(record.paymentDate) ||
+        Number.isNaN(Date.parse(record.paymentDate))
+      )
+    ) {
+      throw new Error(
+        `Invalid payment date for house ${houseNumber}.`
+      );
+    }
+
+    if (
+      record.rentMonth &&
+      !/^\d{4}-(0[1-9]|1[0-2])$/.test(record.rentMonth)
+    ) {
+      throw new Error(
+        `Invalid rent month for house ${houseNumber}. Use YYYY-MM.`
+      );
+    }
+
+    totalWrites += record.amountPaid !== undefined ? 3 : 2;
+  }
+
+ 
+  if (totalWrites > 500) {
+    throw new Error(
+      "Import exceeds Firestore's 500-write limit. Split the file into smaller imports."
+    );
+  }
+
+  const propertiesQuery = query(
+    collection(db, PROPERTY_COLLECTION),
+    where("landlordId", "==", landlordId)
+  );
+
+  const existingProperties = await getDocs(propertiesQuery);
+
+  const existingHouseNumbers = new Set(
+    existingProperties.docs.map((propertyDoc) =>
+      normalizeHouseNumber(propertyDoc.data().houseNumber ?? "")
+    )
+  );
+
+  for (const houseNumber of houseNumbers) {
+    if (existingHouseNumbers.has(houseNumber)) {
+      throw new Error(
+        `House ${houseNumber} already exists in your properties.`
+      );
+    }
+  }
+
+  const propertyRefs = records.map((record) =>
+    doc(
+      db,
+      PROPERTY_COLLECTION,
+      createPropertyId(landlordId, record.houseNumber)
+    )
+  );
+
+  const tenantRefs = records.map(() =>
+    doc(collection(db, TENANT_COLLECTION))
+  );
+
+  const paymentRefs = records.map((record) =>
+    record.amountPaid !== undefined
+      ? doc(collection(db, PAYMENT_COLLECTION))
+      : null
+  );
+
+ 
+  await runTransaction(db, async (transaction) => {
+    
+    const existingDocs = await Promise.all(
+      propertyRefs.map((propertyRef) =>
+        transaction.get(propertyRef)
+      )
+    );
+
+    const duplicateIndex = existingDocs.findIndex(
+      (snapshot) => snapshot.exists()
+    );
+
+    if (duplicateIndex !== -1) {
+      throw new Error(
+        `House ${records[duplicateIndex].houseNumber} already exists. Another request may have added it.`
+      );
+    }
+
+    records.forEach((record, index) => {
+      // Create property.
+      transaction.set(propertyRefs[index], {
+        houseNumber: record.houseNumber.trim(),
+        rentAmount: record.rentAmount,
+        status: "occupied",
+        landlordId,
+      });
+
+    
+      transaction.set(tenantRefs[index], {
+        name: record.tenantName.trim(),
+        propertyId: propertyRefs[index].id,
+        houseNumber: record.houseNumber.trim(),
+        paymentStatus: record.paymentStatus,
+        leaseStart: record.leaseStart,
+        landlordId,
+      });
+
+     
+      if (
+        paymentRefs[index] &&
+        record.amountPaid !== undefined
+      ) {
+        transaction.set(paymentRefs[index]!, {
+          tenantId: tenantRefs[index].id,
+          landlordId,
+          houseNumber: record.houseNumber.trim(),
+          amount: record.amountPaid,
+          paymentDate: record.paymentDate,
+          month: record.rentMonth,
+          status: "confirmed",
+          createdAt: serverTimestamp(),
+        });
+      }
+    });
+  });
+
+  console.log(
+    "Properties, tenants and payments imported successfully."
+  );
+}

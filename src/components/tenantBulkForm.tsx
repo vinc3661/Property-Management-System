@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 
 import type { PropertyTenantImport } from "../types/propertyTenantImport";
@@ -76,10 +76,7 @@ function validateRows(rows: Record<string, unknown>[]) {
       ? parseDate(data.paymentdate)
       : "";
 
-    const rentMonthText = getText(data.rentmonth);
-    const rentMonth = rentMonthText
-      ? getText(data.rentmonth)
-      : "";
+    const rentMonth = getText(data.rentmonth);
 
     const rowErrors: string[] = [];
 
@@ -122,7 +119,7 @@ function validateRows(rows: Record<string, unknown>[]) {
       if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(rentMonth)) {
         rowErrors.push("Paid tenant requires a rent month (YYYY-MM).");
       }
-    } else if (amountText || paymentDateText || rentMonthText) {
+    } else if (amountText || paymentDateText || rentMonth) {
       rowErrors.push(
         "Payment details should only be provided for paid tenants."
       );
@@ -132,7 +129,6 @@ function validateRows(rows: Record<string, unknown>[]) {
       rowErrors.forEach((message) => {
         errors.push({ row: index + 2, message });
       });
-
       return;
     }
 
@@ -141,10 +137,7 @@ function validateRows(rows: Record<string, unknown>[]) {
       tenantName,
       rentAmount,
       leaseStart,
-      paymentStatus: paymentStatus as
-        | "paid"
-        | "pending"
-        | "unpaid",
+      paymentStatus: paymentStatus as "paid" | "pending" | "unpaid",
       ...(amountPaid !== undefined
         ? { amountPaid, paymentDate, rentMonth }
         : {}),
@@ -154,9 +147,6 @@ function validateRows(rows: Record<string, unknown>[]) {
   return { records, errors };
 }
 
-// Text documents must use pipe-separated or tab-separated records.
-// Expected order:
-// houseNumber | tenantName | rentAmount | leaseStart | paymentStatus | amountPaid | paymentDate | rentMonth
 function parseDocumentText(text: string) {
   const lines = text
     .split(/\r?\n/)
@@ -190,7 +180,6 @@ function parseDocumentText(text: string) {
 
     const values = line.split(separator).map((value) => value.trim());
 
-    // Allow a header row.
     if (
       values.map(normalizeHeader).join("|") ===
       expectedHeaders.join("|")
@@ -234,6 +223,9 @@ export function TenantBulkForm({
   const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState("");
 
+  
+  const importLock = useRef(false);
+
   const handleFileChange = async (
     event: ChangeEvent<HTMLInputElement>
   ) => {
@@ -250,13 +242,9 @@ export function TenantBulkForm({
     try {
       const result = await extractFileContent(file);
 
-      let parsed;
-
-      if (result.rows) {
-        parsed = validateRows(result.rows);
-      } else {
-        parsed = parseDocumentText(result.text);
-      }
+      const parsed = result.rows
+        ? validateRows(result.rows)
+        : parseDocumentText(result.text);
 
       setRecords(parsed.records);
       setErrors(parsed.errors);
@@ -287,7 +275,9 @@ export function TenantBulkForm({
   };
 
   const handleImport = async () => {
-    if (!records.length || errors.length || importing) return;
+    if (!records.length || errors.length || importLock.current) return;
+
+    importLock.current = true;
 
     try {
       setImporting(true);
@@ -304,100 +294,179 @@ export function TenantBulkForm({
         error instanceof Error ? error.message : "Import failed."
       );
     } finally {
+      importLock.current = false;
       setImporting(false);
     }
   };
 
   return (
-    <div className="space-y-6 rounded-xl border border-gray-800 bg-gray-950 p-6 text-white">
-      <div>
-        <h2 className="text-xl font-semibold">
-          Bulk Import Properties & Tenants
-        </h2>
+    <div className="w-full min-w-0 space-y-6 rounded-2xl border border-white/10 bg-[#090909] p-4 text-white shadow-xl sm:p-6 lg:p-7">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
+            Bulk Import
+          </h2>
+          <p className="mt-1 max-w-xl text-sm leading-6 text-gray-400">
+            Import your existing properties and tenant records in one go.
+          </p>
+        </div>
 
-        <p className="mt-2 text-sm text-gray-400">
-          Upload your existing tenant records from your device.
-        </p>
+        <span className="w-fit rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-xs font-medium text-green-400">
+          Bulk upload
+        </span>
       </div>
 
-      <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
-        <p className="mb-2 text-sm font-medium">
-          Supported files
-        </p>
+      <div className="rounded-xl border border-white/10 bg-[#111111] p-4 sm:p-5">
+        <h3 className="text-sm font-semibold text-white">
+          Upload your records
+        </h3>
 
-        <p className="text-sm text-gray-400">
+        <p className="mt-1 text-xs leading-5 text-gray-500">
           Excel, CSV, Word, PDF, JPG, PNG and WEBP.
         </p>
 
+        <label
+          htmlFor="tenant-import-file"
+          className={`mt-4 flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/30 px-4 py-6 text-center transition hover:border-green-500/60 hover:bg-green-500/[0.04] ${
+            loading || importing ? "pointer-events-none opacity-50" : ""
+          }`}
+        >
+          <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-green-400">
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 16V4m0 0L7 9m5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"
+              />
+            </svg>
+          </div>
+
+          <span className="text-sm font-medium text-white">
+            Choose a file to upload
+          </span>
+          <span className="mt-1 text-xs text-gray-500">
+            Select a file from your device
+          </span>
+        </label>
+
         <input
+          id="tenant-import-file"
           type="file"
           accept=".xlsx,.csv,.docx,.pdf,.jpg,.jpeg,.png,.webp,.bmp"
           onChange={handleFileChange}
           disabled={loading || importing}
-          className="mt-4 block w-full text-sm text-gray-300 file:mr-4 file:rounded-lg file:border-0 file:bg-green-600 file:px-4 file:py-2 file:font-medium file:text-white"
+          className="sr-only"
         />
 
         {fileName && (
-          <p className="mt-3 text-sm text-gray-400">
-            Selected: {fileName}
-          </p>
+          <div className="mt-3 flex min-w-0 items-center gap-3 rounded-lg border border-white/10 bg-black/40 p-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-xs font-bold text-green-400">
+              FILE
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-gray-200">
+                {fileName}
+              </p>
+              <p className="text-xs text-gray-500">
+                Selected for processing
+              </p>
+            </div>
+          </div>
         )}
       </div>
 
       {loading && (
-        <p className="text-sm text-gray-300">
-          Extracting and validating file contents...
-        </p>
+        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#111111] p-4">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-700 border-t-green-400" />
+          <p className="text-sm text-gray-300">
+            Extracting and validating file contents...
+          </p>
+        </div>
       )}
 
       {records.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="font-semibold">
-            Preview ({records.length} records)
-          </h3>
+        <div className="min-w-0 space-y-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-sm font-semibold text-white">
+              Import preview
+            </h3>
+            <span className="text-xs text-green-400">
+              {records.length} valid records
+            </span>
+          </div>
 
-          <div className="overflow-x-auto rounded-lg border border-gray-800">
-            <table className="w-full min-w-[650px] text-left text-sm">
-              <thead className="bg-gray-900 text-gray-300">
-                <tr>
-                  <th className="p-3">House</th>
-                  <th className="p-3">Tenant</th>
-                  <th className="p-3">Rent</th>
-                  <th className="p-3">Lease</th>
-                  <th className="p-3">Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {records.map((record, index) => (
-                  <tr
-                    key={`${record.houseNumber}-${index}`}
-                    className="border-t border-gray-800"
-                  >
-                    <td className="p-3">{record.houseNumber}</td>
-                    <td className="p-3">{record.tenantName}</td>
-                    <td className="p-3">
-                      KSh {record.rentAmount.toLocaleString()}
-                    </td>
-                    <td className="p-3">{record.leaseStart}</td>
-                    <td className="p-3">{record.paymentStatus}</td>
+          <div className="overflow-hidden rounded-xl border border-white/10 bg-[#111111]">
+            <div className="max-w-full overflow-x-auto">
+              <table className="w-full min-w-[620px] text-left text-sm">
+                <thead className="bg-white/[0.04] text-xs uppercase tracking-wider text-gray-500">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">House</th>
+                    <th className="px-4 py-3 font-medium">Tenant</th>
+                    <th className="px-4 py-3 font-medium">Monthly rent</th>
+                    <th className="px-4 py-3 font-medium">Lease start</th>
+                    <th className="px-4 py-3 font-medium">Payment</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody>
+                  {records.map((record, index) => (
+                    <tr
+                      key={`${record.houseNumber}-${index}`}
+                      className="border-t border-white/[0.06] transition hover:bg-white/[0.025]"
+                    >
+                      <td className="whitespace-nowrap px-4 py-3 font-medium text-white">
+                        {record.houseNumber}
+                      </td>
+                      <td className="px-4 py-3 text-gray-300">
+                        {record.tenantName}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-gray-300">
+                        KSh {record.rentAmount.toLocaleString()}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-gray-400">
+                        {record.leaseStart}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${
+                            record.paymentStatus === "paid"
+                              ? "bg-green-500/10 text-green-400"
+                              : record.paymentStatus === "pending"
+                                ? "bg-yellow-500/10 text-yellow-400"
+                                : "bg-white/10 text-gray-400"
+                          }`}
+                        >
+                          {record.paymentStatus}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <p className="border-t border-white/[0.06] px-4 py-3 text-xs text-gray-500 sm:hidden">
+              Swipe horizontally to view all columns.
+            </p>
           </div>
         </div>
       )}
 
       {errors.length > 0 && (
-        <div className="rounded-lg border border-red-900 bg-red-950/30 p-4">
-          <h3 className="mb-2 font-semibold text-red-400">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/[0.05] p-4">
+          <h3 className="mb-3 text-sm font-semibold text-red-400">
             Import errors ({errors.length})
           </h3>
 
-          <ul className="space-y-1 text-sm text-red-300">
+          <ul className="max-h-48 space-y-2 overflow-y-auto text-sm text-red-300">
             {errors.map((error, index) => (
-              <li key={index}>
+              <li key={index} className="leading-5">
                 {error.row > 0 ? `Row ${error.row}: ` : ""}
                 {error.message}
               </li>
@@ -407,24 +476,38 @@ export function TenantBulkForm({
       )}
 
       {message && (
-        <p className="text-sm text-green-400">{message}</p>
+        <div
+          className={`rounded-xl border p-3 text-sm ${
+            message.toLowerCase().includes("successfully")
+              ? "border-green-500/20 bg-green-500/[0.06] text-green-400"
+              : "border-white/10 bg-white/[0.04] text-gray-300"
+          }`}
+        >
+          {message}
+        </div>
       )}
 
-      <button
-        type="button"
-        onClick={handleImport}
-        disabled={
-          loading ||
-          importing ||
-          records.length === 0 ||
-          errors.length > 0
-        }
-        className="w-full rounded-lg bg-green-600 px-5 py-3 font-semibold text-white transition hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {importing
-          ? "Importing..."
-          : `Import ${records.length} Records`}
-      </button>
+      <div className="border-t border-white/[0.08] pt-5">
+        <button
+          type="button"
+          onClick={handleImport}
+          disabled={
+            loading ||
+            importing ||
+            records.length === 0 ||
+            errors.length > 0
+          }
+          className="w-full rounded-xl bg-green-500 px-5 py-3.5 text-sm font-semibold text-black transition hover:bg-green-400 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-800 disabled:text-gray-500"
+        >
+          {importing
+            ? "Importing records..."
+            : `Import ${records.length} Records`}
+        </button>
+
+        <p className="mt-3 text-center text-xs text-gray-600">
+          Review your records before importing them into your database.
+        </p>
+      </div>
     </div>
   );
 }

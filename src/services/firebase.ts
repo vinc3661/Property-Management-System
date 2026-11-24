@@ -1,3 +1,4 @@
+
 import { initializeApp } from "firebase/app";
 import {
   getFirestore,
@@ -12,20 +13,21 @@ import {
   getDoc,
   query,
   where,
-serverTimestamp,  
-writeBatch,
-  
+  serverTimestamp,
+  runTransaction,
 } from "firebase/firestore";
+
+import { getAuth } from "firebase/auth";
+
 import type { Payment } from "../types/Payment";
-import{
-  
-getAuth,} from "firebase/auth";
 import type { Tenant } from "../types/Tenant";
-import type {Property} from "../types/Property";
+import type { Property } from "../types/Property";
 import type { UserProfile } from "../types/UserProfile";
+import type { PropertyTenantImport } from "../types/propertyTenantImport";
+
 import { supabase } from "./supabase";
 
-import type { PropertyTenantImport } from "../types/propertyTenantImport";
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -34,31 +36,78 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
+
 console.log("Firebase project:", firebaseConfig.projectId);
+
 const app = initializeApp(firebaseConfig);
+
 export const db = getFirestore(app);
-export const auth=getAuth(app);
+export const auth = getAuth(app);
 
 const PROPERTY_COLLECTION = "properties";
-const TENANT_COLLECTION="tenants";
-const PROFILE_COLLECTION="profiles";
-const APPLICATION_COLLECTION="applicants";
+const TENANT_COLLECTION = "tenants";
+const PROFILE_COLLECTION = "profiles";
+const APPLICATION_COLLECTION = "applicants";
 const PAYMENT_COLLECTION = "payments";
+
+
+function normalizeHouseNumber(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function createPropertyId(
+  landlordId: string,
+  houseNumber: string
+): string {
+  return `${encodeURIComponent(landlordId)}__${encodeURIComponent(
+    normalizeHouseNumber(houseNumber)
+  )}`;
+}
+
+async function checkLegacyPropertyDuplicate(
+  landlordId: string,
+  houseNumber: string
+): Promise<void> {
+  const propertiesQuery = query(
+    collection(db, PROPERTY_COLLECTION),
+    where("landlordId", "==", landlordId)
+  );
+
+  const existingProperties = await getDocs(propertiesQuery);
+
+  const normalizedHouseNumber = normalizeHouseNumber(houseNumber);
+
+  const duplicate = existingProperties.docs.some(
+    (propertyDoc) =>
+      normalizeHouseNumber(propertyDoc.data().houseNumber ?? "") ===
+      normalizedHouseNumber
+  );
+
+  if (duplicate) {
+    throw new Error(
+      `House ${houseNumber} already exists in your properties.`
+    );
+  }
+}
+
+
 export async function addTenantToCloud(
   landlordId: string,
-  tenantData: Omit<Tenant, "id"|'landlordId'>
+  tenantData: Omit<Tenant, "id" | "landlordId">
 ): Promise<Tenant> {
   try {
     const tenantCollection = collection(db, TENANT_COLLECTION);
-    
-    console.log("About to save tenant:", tenantData);
-    const docRef = await addDoc(tenantCollection, { ...tenantData, landlordId });
-console.log("Tenant saved with ID:", docRef.id);
-    
-console.log("🔥 ADD DOC FINISHED");
-console.log("🔥 DOCUMENT ID:", docRef.id);
 
-return {
+    console.log("About to save tenant:", tenantData);
+
+    const docRef = await addDoc(tenantCollection, {
+      ...tenantData,
+      landlordId,
+    });
+
+    console.log("Tenant saved with ID:", docRef.id);
+
+    return {
       ...tenantData,
       id: docRef.id,
       landlordId,
@@ -67,11 +116,11 @@ return {
     console.error("Failed to add tenant to the database:", error);
     throw error;
   }
-};
+}
 
 export async function updateTenantsInCloud(
   id: string,
-  updates: Partial<Omit<Tenant, "id"|'landlordId'>>
+  updates: Partial<Omit<Tenant, "id" | "landlordId">>
 ): Promise<void> {
   try {
     const tenantDocument = doc(db, TENANT_COLLECTION, id);
@@ -81,7 +130,7 @@ export async function updateTenantsInCloud(
     console.error("Failed to update tenant:", error);
     throw error;
   }
-};
+}
 
 export async function deleteTenantFromCloud(
   id: string
@@ -94,7 +143,7 @@ export async function deleteTenantFromCloud(
     console.error("Failed to delete tenant from the cloud:", error);
     throw error;
   }
-};
+}
 
 export function subscribeToTenants(
   landlordId: string,
@@ -115,7 +164,9 @@ export function subscribeToTenants(
   });
 }
 
-export async function getTenantsFromCloud(landlordId: string): Promise<Tenant[]> {
+export async function getTenantsFromCloud(
+  landlordId: string
+): Promise<Tenant[]> {
   try {
     const tenantQuery = query(
       collection(db, TENANT_COLLECTION),
@@ -129,136 +180,184 @@ export async function getTenantsFromCloud(landlordId: string): Promise<Tenant[]>
       id: tenantDoc.id,
     }));
   } catch (error) {
-    console.error("failed to get tenant in Cloud:", error);
+    console.error("Failed to get tenants from cloud:", error);
     throw error;
   }
-};
-
-export  async function addPropertiesToCloud(landlordId: string, PropertyData:Omit<Property,'id'|"landlordId">):Promise<Property>{
-try{
-const propertyCollection=collection(db,PROPERTY_COLLECTION);
-const docRef=await addDoc(propertyCollection, { ...PropertyData, landlordId });
-console.log('property added with ID:',docRef.id);
-return{
-  ...PropertyData,
-  id:docRef.id,
-  landlordId,
-};
-}catch(error){
-  console.error('failed to add Property to Cluod:',error);
-throw error
-
 }
 
-};
-
-export async function updatePropertiesInCloud(id:string,updates:Partial<Omit<Property,'id'|'landlordId'>>):Promise<void>{
-  try{
-    const propertyDocument=doc(db,PROPERTY_COLLECTION,id);
-    await updateDoc(propertyDocument,updates)
-  }catch(error){
-    console.error('failed to update Property:',error);
-    throw error 
-  
-  }
-  
-};
-  export async function  deletePropertyFromCloud(id:string):Promise<void>{
-    try{
-      const propertyDocument=doc(db,PROPERTY_COLLECTION,id);
-      await deleteDoc(propertyDocument);
-    }catch(error){
-      console.error("failed to delete Property in cluod:",error);
-      throw error
+export async function addPropertiesToCloud(
+  landlordId: string,
+  propertyData: Omit<Property, "id" | "landlordId">
+): Promise<Property> {
+  try {
+    if (!propertyData.houseNumber.trim()) {
+      throw new Error("House number is required.");
     }
-  };
 
-  export async function getPropertiesFromCloud(landlordId:string):Promise<Property[]>{
-    try{
-      const propertyQuery=query(
-        collection(db,PROPERTY_COLLECTION),
-        where("landlordId","==",landlordId),
-      );
-const onSnapshot=await getDocs(propertyQuery);
+    await checkLegacyPropertyDuplicate(
+      landlordId,
+      propertyData.houseNumber
+    );
 
-return onSnapshot.docs.map((propertyDoc) => ({
-  ...(propertyDoc.data() as Omit<Property, "id">),
-  id: propertyDoc.id,
-}));
-    }catch(error){
-      console.error("failed to retrieve property data:",error);
-      throw new  Error("failed to get properties");
+    
+    const propertyRef = doc(
+      db,
+      PROPERTY_COLLECTION,
+      createPropertyId(landlordId, propertyData.houseNumber)
+    );
+
+    await runTransaction(db, async (transaction) => {
+      const existingProperty = await transaction.get(propertyRef);
+
+      if (existingProperty.exists()) {
+        throw new Error(
+          `House ${propertyData.houseNumber} already exists.`
+        );
+      }
+
+      transaction.set(propertyRef, {
+        ...propertyData,
+        houseNumber: propertyData.houseNumber.trim(),
+        landlordId,
+      });
+    });
+
+    console.log("Property added with ID:", propertyRef.id);
+
+    return {
+      ...propertyData,
+      id: propertyRef.id,
+      landlordId,
     };
+  } catch (error) {
+    console.error("Failed to add property to cloud:", error);
+    throw error;
   }
+}
 
+export async function updatePropertiesInCloud(
+  id: string,
+  updates: Partial<Omit<Property, "id" | "landlordId">>
+): Promise<void> {
+  try {
+    const propertyDocument = doc(db, PROPERTY_COLLECTION, id);
 
-  
+    await updateDoc(propertyDocument, updates);
+  } catch (error) {
+    console.error("Failed to update property:", error);
+    throw error;
+  }
+}
 
-  export function subscribeToProperties(
-    landlordId: string,
-    onDataUpdate: (properties: Property[]) => void
-  ): () => void {
-    const propertiesQuery = query(
+export async function deletePropertyFromCloud(
+  id: string
+): Promise<void> {
+  try {
+    const propertyDocument = doc(db, PROPERTY_COLLECTION, id);
+
+    await deleteDoc(propertyDocument);
+  } catch (error) {
+    console.error("Failed to delete property in cloud:", error);
+    throw error;
+  }
+}
+
+export async function getPropertiesFromCloud(
+  landlordId: string
+): Promise<Property[]> {
+  try {
+    const propertyQuery = query(
       collection(db, PROPERTY_COLLECTION),
       where("landlordId", "==", landlordId)
     );
 
-    return onSnapshot(propertiesQuery, (snapshot) => {
-      const properties: Property[] = snapshot.docs.map((propertyDoc) => ({
-        ...(propertyDoc.data() as Omit<Property, "id">),
-        id: propertyDoc.id,
-      }));
+    const querySnapshot = await getDocs(propertyQuery);
 
-      onDataUpdate(properties);
-    });
+    return querySnapshot.docs.map((propertyDoc) => ({
+      ...(propertyDoc.data() as Omit<Property, "id">),
+      id: propertyDoc.id,
+    }));
+  } catch (error) {
+    console.error("Failed to retrieve property data:", error);
+    throw new Error("Failed to get properties.");
   }
+}
 
-  export async function setUserProfile(id:string, profile:UserProfile){
-    try{
-      const docRef=doc(db,PROFILE_COLLECTION,id);
-      console.log("Authenticated UID:", id);
-console.log("Profile being saved:", profile);
-console.log("Auth email:", auth.currentUser?.email);
-      await setDoc(docRef,{
-        email:profile.email,
-        role:profile.role,
-        name:profile.name,
-        landlordId:profile.landlordId,
-        phoneNumber:profile.phoneNumber,
-      });
-      console.log('user profile set:',docRef.id);
-      return{
-        ...profile,
-        id:docRef.id,
-      };
-    }catch(error){
-      console.error('failed to set user profile:',error);
+export function subscribeToProperties(
+  landlordId: string,
+  onDataUpdate: (properties: Property[]) => void
+): () => void {
+  const propertiesQuery = query(
+    collection(db, PROPERTY_COLLECTION),
+    where("landlordId", "==", landlordId)
+  );
+
+  return onSnapshot(propertiesQuery, (snapshot) => {
+    const properties: Property[] = snapshot.docs.map((propertyDoc) => ({
+      ...(propertyDoc.data() as Omit<Property, "id">),
+      id: propertyDoc.id,
+    }));
+
+    onDataUpdate(properties);
+  });
+}
+
+
+export async function setUserProfile(
+  id: string,
+  profile: UserProfile
+) {
+  try {
+    const docRef = doc(db, PROFILE_COLLECTION, id);
+
+    console.log("Authenticated UID:", id);
+    console.log("Profile being saved:", profile);
+    console.log("Auth email:", auth.currentUser?.email);
+
+    await setDoc(docRef, {
+      email: profile.email,
+      role: profile.role,
+      name: profile.name,
+      landlordId: profile.landlordId,
+      phoneNumber: profile.phoneNumber,
+    });
+
+    console.log("User profile set:", docRef.id);
+
+    return {
+      ...profile,
+      id: docRef.id,
+    };
+  } catch (error) {
+    console.error("Failed to set user profile:", error);
     throw error;
-      
+  }
+}
+
+export async function getUserProfile(
+  id: string
+): Promise<UserProfile | null> {
+  try {
+    const docRef = doc(db, PROFILE_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      console.log("User profile not found:", docRef.id);
+      return null;
     }
 
+    console.log("User profile retrieved:", docRef.id);
 
-  };
+    return {
+      ...docSnap.data(),
+      id: docSnap.id,
+    } as UserProfile;
+  } catch (error) {
+    console.error("Failed to get user profile:", error);
+    throw error;
+  }
+}
 
-  export async function getUserProfile(id:string):Promise<UserProfile | null>{
-    try{
-      const docRef=doc(db, PROFILE_COLLECTION,id);
-     const docSnap= await getDoc(docRef);
-        if(!docSnap.exists()){
-          console.log('user profile not found:',docRef.id);
-          return null;
-        }
-      console.log('user profile get:',docRef.id);
-      return{
-        ...docSnap.data(),
-        id:docSnap.id,
-      }as UserProfile;
-    }catch(error){
-      console.error('failed to get user profile:',error);
-      throw error;
-      };
-      
-    };
 
 export async function submitLandlordApplication(
   propertyName: string,
@@ -268,32 +367,28 @@ export async function submitLandlordApplication(
   const user = auth.currentUser;
 
   if (!user) {
-    throw new Error("You must have a signed-in user account");
+    throw new Error("You must have a signed-in user account.");
   }
 
-  
   const token = await user.getIdToken(true);
 
-
-console.log("Firebase authentication diagnostics:", {
-  uid: user.uid,
-  emailVerified: user.emailVerified,
-  provider: user.providerData.map(
-    (provider) => provider.providerId
-  ),
-});
+  console.log("Firebase authentication diagnostics:", {
+    uid: user.uid,
+    emailVerified: user.emailVerified,
+    provider: user.providerData.map(
+      (provider) => provider.providerId
+    ),
+  });
 
   if (!token) {
-    throw new Error("No Firebase ID token was obtained");
+    throw new Error("No Firebase ID token was obtained.");
   }
 
-  
   const formData = new FormData();
 
   formData.append("propertyAddress", propertyAddress);
   formData.append("ownershipDocument", ownershipDocument);
 
-  
   const { error, data } = await supabase.functions.invoke<{
     uid: string;
     documentPath: string;
@@ -309,12 +404,10 @@ console.log("Firebase authentication diagnostics:", {
     throw new Error(error.message);
   }
 
-  
   if (!data?.documentPath || data.uid !== user.uid) {
-    throw new Error("Invalid response from document upload service");
+    throw new Error("Invalid response from document upload service.");
   }
 
-  
   const applicationRef = doc(
     collection(db, APPLICATION_COLLECTION)
   );
@@ -329,6 +422,7 @@ console.log("Firebase authentication diagnostics:", {
     status: "pending",
   });
 }
+
 
 export async function recordPayment(
   landlordId: string,
@@ -365,6 +459,7 @@ export async function recordPayment(
     throw error;
   }
 }
+
 export function subscribeToPayments(
   landlordId: string,
   onDataUpdate: (payments: Payment[]) => void
@@ -394,6 +489,7 @@ export function subscribeToPayments(
     }
   );
 }
+
 export async function updatePaymentStatus(
   paymentId: string,
   status: Payment["status"]
@@ -412,89 +508,216 @@ export async function updatePaymentStatus(
   }
 }
 
+
 export async function importPropertiesAndTenants(
   landlordId: string,
   records: PropertyTenantImport[]
 ): Promise<void> {
-  try {
-    if (records.length === 0) {
-      throw new Error("No records provided for import.");
+  if (!landlordId.trim()) {
+    throw new Error("Landlord ID is missing.");
+  }
+
+  if (!records.length) {
+    throw new Error("No records provided for import.");
+  }
+
+  
+
+  const houseNumbers = records.map((record) =>
+    normalizeHouseNumber(record.houseNumber)
+  );
+
+  
+  if (new Set(houseNumbers).size !== houseNumbers.length) {
+    throw new Error("Your file contains duplicate house numbers.");
+  }
+
+  let totalWrites = 0;
+
+  for (const record of records) {
+    const houseNumber = record.houseNumber?.trim();
+    const tenantName = record.tenantName?.trim();
+
+    if (
+      !houseNumber ||
+      !tenantName ||
+      !Number.isFinite(record.rentAmount) ||
+      record.rentAmount <= 0
+    ) {
+      throw new Error(
+        `Invalid property or tenant information for house ${record.houseNumber}.`
+      );
     }
 
-    if (records.length * 3 > 500) {
-      throw new Error("Firestore batch limit exceeded.");
+    if (
+      !["paid", "pending", "unpaid"].includes(record.paymentStatus)
+    ) {
+      throw new Error(
+        `Invalid payment status for house ${houseNumber}.`
+      );
     }
 
-    const batch = writeBatch(db);
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(record.leaseStart) ||
+      Number.isNaN(Date.parse(record.leaseStart))
+    ) {
+      throw new Error(
+        `Invalid lease start date for house ${houseNumber}.`
+      );
+    }
 
-    const propertyCollection = collection(db, PROPERTY_COLLECTION);
-    const tenantCollection = collection(db, TENANT_COLLECTION);
-    const paymentCollection = collection(db, PAYMENT_COLLECTION);
+    if (
+      record.paymentStatus === "paid" &&
+      (
+        record.amountPaid === undefined ||
+        !Number.isFinite(record.amountPaid) ||
+        record.amountPaid <= 0 ||
+        !record.paymentDate ||
+        !record.rentMonth
+      )
+    ) {
+      throw new Error(
+        `Payment details are required for paid tenant in house ${houseNumber}.`
+      );
+    }
 
-    for (const record of records) {
-      const propertyRef = doc(propertyCollection);
-      const tenantRef = doc(tenantCollection);
+    if (
+      record.amountPaid !== undefined &&
+      record.paymentStatus !== "paid"
+    ) {
+      throw new Error(
+        `Payment status must be paid for house ${houseNumber}.`
+      );
+    }
 
+    if (
+      record.paymentDate &&
+      (
+        !/^\d{4}-\d{2}-\d{2}$/.test(record.paymentDate) ||
+        Number.isNaN(Date.parse(record.paymentDate))
+      )
+    ) {
+      throw new Error(
+        `Invalid payment date for house ${houseNumber}.`
+      );
+    }
+
+    if (
+      record.rentMonth &&
+      !/^\d{4}-(0[1-9]|1[0-2])$/.test(record.rentMonth)
+    ) {
+      throw new Error(
+        `Invalid rent month for house ${houseNumber}. Use YYYY-MM.`
+      );
+    }
+
+    totalWrites += record.amountPaid !== undefined ? 3 : 2;
+  }
+
+  
+  if (totalWrites > 500) {
+    throw new Error(
+      "Import exceeds Firestore's 500-write limit. Split the file into smaller imports."
+    );
+  }
+
+  const propertiesQuery = query(
+    collection(db, PROPERTY_COLLECTION),
+    where("landlordId", "==", landlordId)
+  );
+
+  const existingProperties = await getDocs(propertiesQuery);
+
+  const existingHouseNumbers = new Set(
+    existingProperties.docs.map((propertyDoc) =>
+      normalizeHouseNumber(propertyDoc.data().houseNumber ?? "")
+    )
+  );
+
+  for (const houseNumber of houseNumbers) {
+    if (existingHouseNumbers.has(houseNumber)) {
+      throw new Error(
+        `House ${houseNumber} already exists in your properties.`
+      );
+    }
+  }
+
+  const propertyRefs = records.map((record) =>
+    doc(
+      db,
+      PROPERTY_COLLECTION,
+      createPropertyId(landlordId, record.houseNumber)
+    )
+  );
+
+  const tenantRefs = records.map(() =>
+    doc(collection(db, TENANT_COLLECTION))
+  );
+
+  const paymentRefs = records.map((record) =>
+    record.amountPaid !== undefined
+      ? doc(collection(db, PAYMENT_COLLECTION))
+      : null
+  );
+
+  await runTransaction(db, async (transaction) => {
+  
+    const existingDocs = await Promise.all(
+      propertyRefs.map((propertyRef) =>
+        transaction.get(propertyRef)
+      )
+    );
+
+    const duplicateIndex = existingDocs.findIndex(
+      (snapshot) => snapshot.exists()
+    );
+
+    if (duplicateIndex !== -1) {
+      throw new Error(
+        `House ${records[duplicateIndex].houseNumber} already exists. Another request may have added it.`
+      );
+    }
+
+
+    records.forEach((record, index) => {
       
-      batch.set(propertyRef, {
-        houseNumber: record.houseNumber,
+      transaction.set(propertyRefs[index], {
+        houseNumber: record.houseNumber.trim(),
         rentAmount: record.rentAmount,
         status: "occupied",
         landlordId,
       });
 
-    
-      batch.set(tenantRef, {
-        name: record.tenantName,
-        propertyId: propertyRef.id,
-        houseNumber: record.houseNumber,
+      
+      transaction.set(tenantRefs[index], {
+        name: record.tenantName.trim(),
+        propertyId: propertyRefs[index].id,
+        houseNumber: record.houseNumber.trim(),
         paymentStatus: record.paymentStatus,
         leaseStart: record.leaseStart,
         landlordId,
       });
 
       
-      if (record.amountPaid !== undefined) {
-        if (
-          record.paymentStatus !== "paid" ||
-          record.amountPaid <= 0 ||
-          !record.paymentDate ||
-          !record.rentMonth
-        ) {
-          throw new Error(
-            `Invalid payment information for house ${record.houseNumber}.`
-          );
-        }
-
-        const paymentRef = doc(paymentCollection);
-
-        batch.set(paymentRef, {
-          tenantId: tenantRef.id,
+      if (
+        paymentRefs[index] &&
+        record.amountPaid !== undefined
+      ) {
+        transaction.set(paymentRefs[index]!, {
+          tenantId: tenantRefs[index].id,
           landlordId,
-          houseNumber: record.houseNumber,
+          houseNumber: record.houseNumber.trim(),
           amount: record.amountPaid,
           paymentDate: record.paymentDate,
-          rentMonth: record.rentMonth,
+          month: record.rentMonth,
           status: "confirmed",
-          createdAt: new Date().toISOString(),
+          createdAt: serverTimestamp(),
         });
       }
-      if (
-        record.paymentStatus === "paid" &&
-        record.amountPaid === undefined
-      ) {
-        throw new Error(
-          `Payment details are required for paid tenant in house ${record.houseNumber}.`
-        );
-      }
-    }
+    });
+  });
 
-    await batch.commit();
-
-    console.log("Properties, tenants and payments imported successfully.");
-
-  } catch (error) {
-    console.error("Failed to import records:", error);
-    throw error;
-  }
+  console.log(
+    "Properties, tenants and payments imported successfully."
+  );
 }
