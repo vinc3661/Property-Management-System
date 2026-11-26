@@ -5,7 +5,7 @@ import type { Property } from "../../types/Property";
 import type { Tenant } from "../../types/Tenant";
 import type { Payment } from "../../types/Payment";
 import type { PropertyTenantImport } from "../../types/propertyTenantImport";
-
+import { SearchPage } from "../SearchPage";
 import { PropertyAIAssistant } from "../PropertyAIAssistant";
 import { TenantsPage } from "../tenantPage";
 import { PropertiesPage } from "../propertiesPage";
@@ -174,7 +174,14 @@ export function LandlordDashboard({
               onUpdatePaymentStatus={onUpdatePaymentStatus}
             />
           )}
-
+            {activePage === "search" && (
+  <SearchPage
+    properties={properties}
+    tenants={tenants}
+    onOpenTenants={() => setActivePage("tenants")}
+    onOpenProperties={() => setActivePage("properties")}
+  />
+)}
           {activePage === "caretakers" && role === "landlord" && (
             <CaretakersPage />
           )}
