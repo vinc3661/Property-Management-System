@@ -5,7 +5,7 @@ import type { Property } from "../../types/Property";
 import type { Tenant } from "../../types/Tenant";
 import type { Payment } from "../../types/Payment";
 import type { PropertyTenantImport } from "../../types/propertyTenantImport";
-import { SearchPage } from "../SearchPage";
+import { SearchPage } from "../searchPage";
 import { PropertyAIAssistant } from "../PropertyAIAssistant";
 import { TenantsPage } from "../tenantPage";
 import { PropertiesPage } from "../propertiesPage";

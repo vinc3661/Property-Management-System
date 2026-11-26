@@ -8,6 +8,7 @@ type DashboardSidebarProps = {
 
 const navigationItems = [
   { id: "overview", label: "Overview" },
+{ id: "search", label: "Search"},
   { id: "properties", label: "Properties" },
   { id: "tenants", label: "Tenants" },
   { id: "payments", label: "Payments" },
