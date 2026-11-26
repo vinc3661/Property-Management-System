@@ -170,6 +170,7 @@ export function LandlordDashboard({
             <PaymentsPage
               tenants={tenants}
               payments={payments}
+              properties={properties}
               onRecordPayment={onRecordPayment}
               onUpdatePaymentStatus={onUpdatePaymentStatus}
             />

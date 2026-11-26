@@ -4,10 +4,12 @@ import type { FormEvent } from "react";
 
 import type { Tenant } from "../types/Tenant";
 import type { Payment } from "../types/Payment";
+import type { Property } from "../types/Property";
 
 type PaymentsPageProps = {
   tenants: Tenant[];
   payments: Payment[];
+  properties: Property[];
 
   onRecordPayment: (
     paymentData: Omit<Payment, "id" | "landlordId" | "createdAt">
@@ -31,6 +33,7 @@ function getLocalDate() {
 export function PaymentsPage({
   tenants,
   payments,
+  properties,
   onRecordPayment,
   onUpdatePaymentStatus,
 }: PaymentsPageProps) {
@@ -42,6 +45,7 @@ export function PaymentsPage({
   const [paymentDate, setPaymentDate] = useState(today);
   const [rentMonth, setRentMonth] = useState(currentMonth);
   const [status, setStatus] = useState<Payment["status"]>("pending");
+  const [selectedRentMonth, setSelectedRentMonth] = useState(currentMonth);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
@@ -78,6 +82,53 @@ export function PaymentsPage({
     (total, payment) => total + payment.amount,
     0
   );
+
+  
+  const rentStatusRows = tenants.map((tenant) => {
+    
+    const property = properties.find(
+      (item) => item.houseNumber === tenant.houseNumber
+    );
+
+    
+    const rentDue = property?.rentAmount ?? null;
+
+    
+    const totalPaid = payments
+      .filter(
+        (payment) =>
+          payment.tenantId === tenant.id &&
+          payment.rentMonth === selectedRentMonth &&
+          payment.status === "confirmed"
+      )
+      .reduce((total, payment) => total + payment.amount, 0);
+
+    
+    const remaining = rentDue === null
+      ? null
+      : Math.max(rentDue - totalPaid, 0);
+
+    
+    let rentStatus: "paid" | "partial" | "unpaid" | "rent-not-set";
+
+    if (rentDue === null) {
+      rentStatus = "rent-not-set";
+    } else if (totalPaid >= rentDue) {
+      rentStatus = "paid";
+    } else if (totalPaid > 0) {
+      rentStatus = "partial";
+    } else {
+      rentStatus = "unpaid";
+    }
+
+    return {
+      tenant,
+      rentDue,
+      totalPaid,
+      remaining,
+      rentStatus,
+    };
+  });
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -314,6 +365,92 @@ export function PaymentsPage({
               {isSubmitting ? "Recording..." : "Record Payment"}
             </button>
           </form>
+        )}
+      </section>
+
+
+      <section className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
+        <div className="flex flex-col gap-4 border-b border-zinc-800 p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-white">
+              Rent Status
+            </h2>
+            <p className="mt-1 text-sm text-zinc-400">
+              Track rent paid and outstanding balances for each rent month.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-zinc-300">
+              Rent Month
+            </label>
+            <input
+              type="month"
+              value={selectedRentMonth}
+              onChange={(event) => setSelectedRentMonth(event.target.value)}
+              className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500"
+            />
+          </div>
+        </div>
+
+        {tenants.length === 0 ? (
+          <div className="p-8 text-center text-sm text-zinc-400">
+            Register tenants to see their rent status.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[780px] text-left text-sm">
+              <thead className="bg-zinc-900 text-xs uppercase tracking-wide text-zinc-500">
+                <tr>
+                  <th className="px-6 py-4 font-semibold">Tenant</th>
+                  <th className="px-6 py-4 font-semibold">House</th>
+                  <th className="px-6 py-4 font-semibold">Rent Due</th>
+                  <th className="px-6 py-4 font-semibold">Paid</th>
+                  <th className="px-6 py-4 font-semibold">Remaining</th>
+                  <th className="px-6 py-4 font-semibold">Status</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-zinc-800">
+                {rentStatusRows.map((row) => (
+                  <tr key={row.tenant.id} className="transition hover:bg-zinc-900/70">
+                    <td className="px-6 py-4 font-medium text-white">
+                      {row.tenant.name}
+                    </td>
+                    <td className="px-6 py-4 text-zinc-400">
+                      {row.tenant.houseNumber}
+                    </td>
+                    <td className="px-6 py-4 text-zinc-400">
+                      {row.rentDue === null ? "—" : formatCurrency(row.rentDue)}
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-white">
+                      {formatCurrency(row.totalPaid)}
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-white">
+                      {row.remaining === null ? "—" : formatCurrency(row.remaining)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize ${
+                          row.rentStatus === "paid"
+                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                            : row.rentStatus === "partial"
+                            ? "border-yellow-500/20 bg-yellow-500/10 text-yellow-400"
+                            : row.rentStatus === "unpaid"
+                            ? "border-red-500/20 bg-red-500/10 text-red-400"
+                            : "border-zinc-700 bg-zinc-800 text-zinc-400"
+                        }`}
+                      >
+                        {row.rentStatus === "rent-not-set"
+                          ? "Rent not set"
+                          : row.rentStatus}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 

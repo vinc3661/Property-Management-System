@@ -434,7 +434,7 @@ export async function recordPayment(
       landlordId,
       houseNumber: paymentData.houseNumber,
       amount: paymentData.amount,
-      paymentDate: paymentData.paymentDate,
+    rentMonth: paymentData.rentMonth,
       month: paymentData.rentMonth,
       status: "pending",
       createdAt: serverTimestamp(),
