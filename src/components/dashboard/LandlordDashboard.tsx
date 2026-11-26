@@ -104,6 +104,10 @@ export function LandlordDashboard({
       title: "Caretakers",
       description: "Manage your property caretakers.",
     },
+    search: {
+  title: "Search",
+  description: "Find tenants and properties in your workspace.",
+},
   };
 
   const currentPage = pageDetails[activePage] ?? pageDetails.overview;
